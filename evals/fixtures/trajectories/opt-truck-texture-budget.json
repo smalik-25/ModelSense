@@ -1,0 +1,88 @@
+{
+  "task_id": "opt-truck-texture-budget",
+  "prompt": "Keep GPU texture memory under 5 MB. What has to give?",
+  "model_id": "CesiumMilkTruck",
+  "tools": [
+    {
+      "name": "mcp__modelsense__load_model",
+      "input": {
+        "model_id": "CesiumMilkTruck"
+      },
+      "output": {
+        "session_id": "df950d14-c30c-42a4-915a-cf946ff3b276",
+        "model_id": "CesiumMilkTruck",
+        "name": "Cesium Milk Truck",
+        "counts": {
+          "nodes": 6,
+          "meshes": 2,
+          "materials": 4,
+          "textures": 1,
+          "animations": 1
+        },
+        "totals": {
+          "vertices": 3995,
+          "triangles": 2856
+        },
+        "extensionsUsed": [],
+        "fileSizeBytes": 369980
+      },
+      "is_error": false
+    },
+    {
+      "name": "mcp__modelsense__suggest_optimizations",
+      "input": {
+        "session_id": "df950d14-c30c-42a4-915a-cf946ff3b276",
+        "budget_texture_mb": 5
+      },
+      "output": {
+        "totals": {
+          "triangles": 2856,
+          "textureGpuBytes": 22369620
+        },
+        "budget": {
+          "triangles": null,
+          "textureMb": 5
+        },
+        "overBudget": {
+          "triangles": false,
+          "texture": true
+        },
+        "findings": [
+          {
+            "kind": "missing_texture_compression",
+            "severity": "high",
+            "target": "scene textures",
+            "detail": "1 textures with no KTX2/BasisU supercompression.",
+            "estimatedSavings": "~70-90% texture bytes with KTX2"
+          },
+          {
+            "kind": "oversized_texture",
+            "severity": "medium",
+            "target": "CesiumMilkTruck.jpg",
+            "detail": "Texture is 2048x2048 (22.4 MB GPU). Halving to 1024px cuts it to a quarter.",
+            "estimatedSavings": "~16.8 MB GPU"
+          },
+          {
+            "kind": "duplicate_materials",
+            "severity": "low",
+            "target": "materials",
+            "detail": "1 group(s) of identical materials; 1 could be merged.",
+            "estimatedSavings": "~1 redundant material(s)"
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "scene_commands": [],
+  "approvals": [],
+  "final_text": "You're at 22.4 MB of GPU texture memory against a 5 MB budget \u2014 about 4.5x over. One texture is driving all of it:\n\n- **CesiumMilkTruck.jpg** (2048\u00d72048, uncompressed on GPU) = 22.4 MB by itself.\n\nTo hit 5 MB:\n1. **KTX2/BasisU compression** (currently missing entirely) \u2014 cuts GPU bytes 70-90%. This alone could get you to roughly 2-6 MB depending on settings, so it's the highest-leverage move.\n2. **Downsize the texture** \u2014 halving 2048\u21921024px cuts GPU cost to a quarter (~5.6 MB) on its own. Combined with KTX2, this comfortably clears the budget with margin.\n3. Minor cleanup: one pair of duplicate materials could be merged, but that's a draw-call/organization win, not a texture-memory one \u2014 won't move the needle here.\n\nPractical path: apply KTX2 compression first and check the number; only downsize resolution further if you need extra headroom or want a safety margin for future texture additions.",
+  "usage": {
+    "turns": 3,
+    "cost_usd": 0.10721639999999999,
+    "duration_ms": 12509.0,
+    "input_tokens": 7448,
+    "output_tokens": 572
+  },
+  "error": null
+}

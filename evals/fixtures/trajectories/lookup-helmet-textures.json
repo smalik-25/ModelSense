@@ -1,6 +1,6 @@
 {
-  "task_id": "lookup-helmet-triangles",
-  "prompt": "How many triangles does this model have?",
+  "task_id": "lookup-helmet-textures",
+  "prompt": "How many textures does this helmet use?",
   "model_id": "DamagedHelmet",
   "tools": [
     {
@@ -9,7 +9,7 @@
         "model_id": "DamagedHelmet"
       },
       "output": {
-        "session_id": "33d316ca-f9b5-4608-b4fa-bff13e1a92fd",
+        "session_id": "e19efe01-04ca-42c2-b117-3c5344f2648d",
         "model_id": "DamagedHelmet",
         "name": "Damaged Helmet",
         "counts": {
@@ -31,13 +31,13 @@
   ],
   "scene_commands": [],
   "approvals": [],
-  "final_text": "The DamagedHelmet model has **15,452 triangles** (14,556 vertices), in a single mesh/node with 1 material and 5 textures.",
+  "final_text": "The DamagedHelmet uses **5 textures** (across its 1 material), with 14,556 vertices and 15,452 triangles total.",
   "usage": {
     "turns": 2,
-    "cost_usd": 0.0774006,
-    "duration_ms": 5038.0,
-    "input_tokens": 4465,
-    "output_tokens": 132
+    "cost_usd": 0.0783939,
+    "duration_ms": 4712.0,
+    "input_tokens": 4567,
+    "output_tokens": 135
   },
   "error": null
 }

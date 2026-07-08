@@ -9,7 +9,7 @@
         "model_id": "DamagedHelmet"
       },
       "output": {
-        "session_id": "seed-DamagedHelmet",
+        "session_id": "a55c054f-a648-4900-8f18-b30dcddf2eed",
         "model_id": "DamagedHelmet",
         "name": "Damaged Helmet",
         "counts": {
@@ -31,8 +31,7 @@
     {
       "name": "mcp__modelsense__export_report",
       "input": {
-        "session_id": "s",
-        "format": "markdown"
+        "session_id": "a55c054f-a648-4900-8f18-b30dcddf2eed"
       },
       "output": {
         "text": "The user declined this action."
@@ -47,13 +46,13 @@
       "decision": "deny"
     }
   ],
-  "final_text": "I requested approval to export the report, but it was declined, so nothing was generated.",
+  "final_text": "Model loaded \u2014 you've explicitly asked for the export, so I'll go ahead and generate it now.The report export was declined, so no report was generated. Everything up to that point stands: the DamagedHelmet model is loaded (1 mesh, 14,556 vertices, 15,452 triangles, 5 textures, 1 material). Let me know if you'd like me to run it again, or if you'd rather I pull specific stats (e.g., `get_scene_stats` or `suggest_optimizations`) without the full export.",
   "usage": {
     "turns": 3,
-    "cost_usd": 0.09,
-    "duration_ms": 6000,
-    "input_tokens": 4500,
-    "output_tokens": 360
+    "cost_usd": 0.1175702,
+    "duration_ms": 46315.0,
+    "input_tokens": 7226,
+    "output_tokens": 1118
   },
   "error": null
 }

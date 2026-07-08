@@ -1,6 +1,6 @@
 {
-  "task_id": "measure-truck-distance-wheels",
-  "prompt": "What is the distance between the two wheels?",
+  "task_id": "measure-truck-wheel-named",
+  "prompt": "Measure the bounding box of the node named \"Wheels.001\".",
   "model_id": "CesiumMilkTruck",
   "tools": [
     {
@@ -9,7 +9,7 @@
         "model_id": "CesiumMilkTruck"
       },
       "output": {
-        "session_id": "99032b99-8e55-42d4-8f01-eb83175f8af6",
+        "session_id": "d4ec57b1-0f25-4dcf-9530-6f4b54a645b4",
         "model_id": "CesiumMilkTruck",
         "name": "Cesium Milk Truck",
         "counts": {
@@ -31,29 +31,12 @@
     {
       "name": "mcp__modelsense__find_elements",
       "input": {
-        "session_id": "99032b99-8e55-42d4-8f01-eb83175f8af6",
-        "query": "wheel"
+        "session_id": "d4ec57b1-0f25-4dcf-9530-6f4b54a645b4",
+        "query": "Wheels.001"
       },
       "output": {
-        "total": 2,
+        "total": 1,
         "elements": [
-          {
-            "id": "Wheels",
-            "name": "Wheels",
-            "type": "mesh",
-            "triangles": 768,
-            "vertices": 828,
-            "bboxMin": [
-              -1.0579999054670353,
-              0.0014518341839775961,
-              1.0063997411237933
-            ],
-            "bboxMax": [
-              1.0579999054670353,
-              0.8539921289000056,
-              1.858940031530741
-            ]
-          },
           {
             "id": "Wheels.001",
             "name": "Wheels.001",
@@ -78,26 +61,25 @@
     {
       "name": "mcp__modelsense__measure",
       "input": {
-        "session_id": "99032b99-8e55-42d4-8f01-eb83175f8af6",
-        "node_a": "Wheels",
-        "node_b": "Wheels.001"
+        "session_id": "d4ec57b1-0f25-4dcf-9530-6f4b54a645b4",
+        "node_id": "Wheels.001"
       },
       "output": {
         "type": "measurement",
-        "label": "distance Wheels to Wheels.001 = 2.785 scene units",
+        "label": "bbox 2.116 x 0.853 x 0.853 (diagonal 2.435) scene units",
         "points": [
           [
-            0,
-            0.4277219815419916,
-            1.432669886327267
+            -1.0579999054670353,
+            0.0014518341839775961,
+            -1.778600059498672
           ],
           [
-            0,
-            0.4277219815419916,
-            -1.352329914295198
+            1.0579999054670353,
+            0.8539921289000056,
+            -0.9260597690917243
           ]
         ],
-        "value": 2.785,
+        "value": 2.435,
         "unit": "scene-units"
       },
       "is_error": false
@@ -106,31 +88,31 @@
   "scene_commands": [
     {
       "type": "measurement",
-      "label": "distance Wheels to Wheels.001 = 2.785 scene units",
+      "label": "bbox 2.116 x 0.853 x 0.853 (diagonal 2.435) scene units",
       "points": [
         [
-          0,
-          0.4277219815419916,
-          1.432669886327267
+          -1.0579999054670353,
+          0.0014518341839775961,
+          -1.778600059498672
         ],
         [
-          0,
-          0.4277219815419916,
-          -1.352329914295198
+          1.0579999054670353,
+          0.8539921289000056,
+          -0.9260597690917243
         ]
       ],
-      "value": 2.785,
+      "value": 2.435,
       "unit": "scene-units"
     }
   ],
   "approvals": [],
-  "final_text": "The distance between the front and rear wheel groups (node centers) is **2.785 scene units**. Note glTF has no defined real-world unit, so this is relative to the model's own scale.",
+  "final_text": "The \"Wheels.001\" node's bounding box is **2.116 \u00d7 0.853 \u00d7 0.853** scene units (diagonal 2.435), and the viewer now shows the overlay. Note glTF has no defined real-world unit, so this is relative to the model's own scale.",
   "usage": {
     "turns": 4,
-    "cost_usd": 0.1353512,
-    "duration_ms": 18220.0,
+    "cost_usd": 0.13466289999999997,
+    "duration_ms": 9644.0,
     "input_tokens": 7450,
-    "output_tokens": 507
+    "output_tokens": 502
   },
   "error": null
 }

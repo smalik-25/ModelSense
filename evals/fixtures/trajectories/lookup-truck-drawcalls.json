@@ -9,7 +9,7 @@
         "model_id": "CesiumMilkTruck"
       },
       "output": {
-        "session_id": "seed-CesiumMilkTruck",
+        "session_id": "7f34e93d-677f-4ce3-bee8-94cdbd2e3de1",
         "model_id": "CesiumMilkTruck",
         "name": "Cesium Milk Truck",
         "counts": {
@@ -31,7 +31,7 @@
     {
       "name": "mcp__modelsense__get_scene_stats",
       "input": {
-        "session_id": "s"
+        "session_id": "7f34e93d-677f-4ce3-bee8-94cdbd2e3de1"
       },
       "output": {
         "scope": "scene",
@@ -75,13 +75,13 @@
   ],
   "scene_commands": [],
   "approvals": [],
-  "final_text": "About 4 draw calls, one per mesh primitive.",
+  "final_text": "**~4 draw calls**, driven by material/mesh grouping rather than raw node count: 2 unique meshes (Wheels, Cesium_Milk_Truck) but Wheels is instanced twice, and the truck body's 4 materials split it into separate batches. Only 1 texture (2048\u00d72048) is shared across the model, so there's no texture-swap overhead inflating the count further.",
   "usage": {
-    "turns": 4,
-    "cost_usd": 0.15,
-    "duration_ms": 9100,
-    "input_tokens": 6000,
-    "output_tokens": 480
+    "turns": 3,
+    "cost_usd": 0.10219890000000001,
+    "duration_ms": 6811.0,
+    "input_tokens": 7347,
+    "output_tokens": 308
   },
   "error": null
 }

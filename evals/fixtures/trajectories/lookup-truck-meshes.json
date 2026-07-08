@@ -1,6 +1,6 @@
 {
-  "task_id": "lookup-truck-nodes",
-  "prompt": "How many nodes are in this truck model?",
+  "task_id": "lookup-truck-meshes",
+  "prompt": "How many meshes does the milk truck contain?",
   "model_id": "CesiumMilkTruck",
   "tools": [
     {
@@ -9,7 +9,7 @@
         "model_id": "CesiumMilkTruck"
       },
       "output": {
-        "session_id": "6c46ec04-7a0d-41e8-a4d1-8b5618e2d72a",
+        "session_id": "bfe095d1-bf5c-4f4a-b961-1b80c2c7c7d0",
         "model_id": "CesiumMilkTruck",
         "name": "Cesium Milk Truck",
         "counts": {
@@ -31,13 +31,13 @@
   ],
   "scene_commands": [],
   "approvals": [],
-  "final_text": "The CesiumMilkTruck model has **6 nodes** (with 2 meshes, 4 materials, 1 texture, and 1 animation).",
+  "final_text": "The CesiumMilkTruck model contains **2 meshes** (across 6 nodes, 4 materials), totaling 3,995 vertices and 2,856 triangles.",
   "usage": {
     "turns": 2,
-    "cost_usd": 0.0777326,
-    "duration_ms": 6110.0,
-    "input_tokens": 4465,
-    "output_tokens": 117
+    "cost_usd": 0.0791192,
+    "duration_ms": 8154.0,
+    "input_tokens": 4567,
+    "output_tokens": 141
   },
   "error": null
 }

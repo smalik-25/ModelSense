@@ -1,0 +1,107 @@
+{
+  "task_id": "lookup-helmet-drawcalls",
+  "prompt": "What is the draw call estimate for this scene?",
+  "model_id": "DamagedHelmet",
+  "tools": [
+    {
+      "name": "mcp__modelsense__load_model",
+      "input": {
+        "model_id": "DamagedHelmet"
+      },
+      "output": {
+        "session_id": "f0c3c729-0295-4cf6-8862-e3778220789e",
+        "model_id": "DamagedHelmet",
+        "name": "Damaged Helmet",
+        "counts": {
+          "nodes": 1,
+          "meshes": 1,
+          "materials": 1,
+          "textures": 5,
+          "animations": 0
+        },
+        "totals": {
+          "vertices": 14556,
+          "triangles": 15452
+        },
+        "extensionsUsed": [],
+        "fileSizeBytes": 3773916
+      },
+      "is_error": false
+    },
+    {
+      "name": "mcp__modelsense__get_scene_stats",
+      "input": {
+        "session_id": "f0c3c729-0295-4cf6-8862-e3778220789e"
+      },
+      "output": {
+        "scope": "scene",
+        "totals": {
+          "vertices": 14556,
+          "triangles": 15452,
+          "drawCallEstimate": 1,
+          "materials": 1,
+          "textures": 5
+        },
+        "meshes": [
+          {
+            "id": "mesh-0",
+            "name": "mesh_helmet_LP_13930damagedHelmet",
+            "vertices": 14556,
+            "triangles": 15452,
+            "sizeBytes": 558504,
+            "instances": 1
+          }
+        ],
+        "textures": [
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 935629,
+            "gpuSizeBytes": 22369620
+          },
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 1300661,
+            "gpuSizeBytes": 22369620
+          },
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 97499,
+            "gpuSizeBytes": 22369620
+          },
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 361678,
+            "gpuSizeBytes": 22369620
+          },
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 517757,
+            "gpuSizeBytes": 22369620
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "scene_commands": [],
+  "approvals": [],
+  "final_text": "The draw call estimate for this scene is **1**. The whole model is a single mesh with one material, so it renders in one draw call.",
+  "usage": {
+    "turns": 3,
+    "cost_usd": 0.1023113,
+    "duration_ms": 7333.0,
+    "input_tokens": 7448,
+    "output_tokens": 230
+  },
+  "error": null
+}

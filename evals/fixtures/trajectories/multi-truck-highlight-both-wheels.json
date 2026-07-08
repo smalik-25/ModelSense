@@ -1,6 +1,6 @@
 {
-  "task_id": "measure-truck-distance-wheels",
-  "prompt": "What is the distance between the two wheels?",
+  "task_id": "multi-truck-highlight-both-wheels",
+  "prompt": "Highlight both wheels of the truck.",
   "model_id": "CesiumMilkTruck",
   "tools": [
     {
@@ -9,7 +9,7 @@
         "model_id": "CesiumMilkTruck"
       },
       "output": {
-        "session_id": "99032b99-8e55-42d4-8f01-eb83175f8af6",
+        "session_id": "9482ac9d-04d1-48e9-87bc-c21201f793b1",
         "model_id": "CesiumMilkTruck",
         "name": "Cesium Milk Truck",
         "counts": {
@@ -31,7 +31,7 @@
     {
       "name": "mcp__modelsense__find_elements",
       "input": {
-        "session_id": "99032b99-8e55-42d4-8f01-eb83175f8af6",
+        "session_id": "9482ac9d-04d1-48e9-87bc-c21201f793b1",
         "query": "wheel"
       },
       "output": {
@@ -76,61 +76,47 @@
       "is_error": false
     },
     {
-      "name": "mcp__modelsense__measure",
+      "name": "mcp__modelsense__highlight_elements",
       "input": {
-        "session_id": "99032b99-8e55-42d4-8f01-eb83175f8af6",
-        "node_a": "Wheels",
-        "node_b": "Wheels.001"
+        "session_id": "9482ac9d-04d1-48e9-87bc-c21201f793b1",
+        "node_ids": [
+          "Wheels",
+          "Wheels.001"
+        ],
+        "color": "#ff6600",
+        "exclusive": true
       },
       "output": {
-        "type": "measurement",
-        "label": "distance Wheels to Wheels.001 = 2.785 scene units",
-        "points": [
-          [
-            0,
-            0.4277219815419916,
-            1.432669886327267
-          ],
-          [
-            0,
-            0.4277219815419916,
-            -1.352329914295198
-          ]
+        "type": "highlight",
+        "nodeIds": [
+          "Wheels",
+          "Wheels.001"
         ],
-        "value": 2.785,
-        "unit": "scene-units"
+        "color": "#ff6600",
+        "exclusive": true
       },
       "is_error": false
     }
   ],
   "scene_commands": [
     {
-      "type": "measurement",
-      "label": "distance Wheels to Wheels.001 = 2.785 scene units",
-      "points": [
-        [
-          0,
-          0.4277219815419916,
-          1.432669886327267
-        ],
-        [
-          0,
-          0.4277219815419916,
-          -1.352329914295198
-        ]
+      "type": "highlight",
+      "nodeIds": [
+        "Wheels",
+        "Wheels.001"
       ],
-      "value": 2.785,
-      "unit": "scene-units"
+      "color": "#ff6600",
+      "exclusive": true
     }
   ],
   "approvals": [],
-  "final_text": "The distance between the front and rear wheel groups (node centers) is **2.785 scene units**. Note glTF has no defined real-world unit, so this is relative to the model's own scale.",
+  "final_text": "Highlighted both wheel meshes \u2014 **Wheels** (front axle) and **Wheels.001** (rear axle), 768 triangles each \u2014 in orange in the viewer.",
   "usage": {
     "turns": 4,
-    "cost_usd": 0.1353512,
-    "duration_ms": 18220.0,
+    "cost_usd": 0.13388540000000002,
+    "duration_ms": 9604.0,
     "input_tokens": 7450,
-    "output_tokens": 507
+    "output_tokens": 460
   },
   "error": null
 }

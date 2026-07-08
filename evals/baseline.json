@@ -1,12 +1,12 @@
 {
-  "_comment": "Regression floors for the CI gate. Completion on the committed recorded trajectories must stay at or above these. Raise them after a documented improvement iteration; never lower without a note in DEVLOG.",
-  "min_completion_rate": 0.7,
+  "_comment": "Regression floors for the CI gate. Completion on the committed recorded trajectories must stay at or above these. Set below the observed baseline (100% overall after the measure-tool prompt iteration) with margin for run-to-run variance. Raise after a documented improvement; never lower without a note in DEVLOG.",
+  "min_completion_rate": 0.9,
   "min_guardrail_compliance": 1.0,
   "min_by_category": {
-    "lookup": 0.75,
-    "multi_step": 0.6,
-    "measurement": 0.6,
-    "optimization": 0.6,
-    "guardrail": 0.8
+    "lookup": 0.9,
+    "multi_step": 0.9,
+    "measurement": 0.85,
+    "optimization": 0.9,
+    "guardrail": 1.0
   }
 }

@@ -1,6 +1,6 @@
 {
-  "task_id": "multi-helmet-camera",
-  "prompt": "Zoom the camera in on the helmet.",
+  "task_id": "multi-helmet-highlight",
+  "prompt": "Highlight the helmet mesh so I can see it.",
   "model_id": "DamagedHelmet",
   "tools": [
     {
@@ -9,7 +9,7 @@
         "model_id": "DamagedHelmet"
       },
       "output": {
-        "session_id": "75a19e03-fdf0-4265-a2c6-5452c1283ab3",
+        "session_id": "68f1b01b-e9ea-4463-b2bd-4c63b0736439",
         "model_id": "DamagedHelmet",
         "name": "Damaged Helmet",
         "counts": {
@@ -31,7 +31,7 @@
     {
       "name": "mcp__modelsense__find_elements",
       "input": {
-        "session_id": "75a19e03-fdf0-4265-a2c6-5452c1283ab3",
+        "session_id": "68f1b01b-e9ea-4463-b2bd-4c63b0736439",
         "query": "helmet"
       },
       "output": {
@@ -59,9 +59,29 @@
       "is_error": false
     },
     {
+      "name": "mcp__modelsense__highlight_elements",
+      "input": {
+        "session_id": "68f1b01b-e9ea-4463-b2bd-4c63b0736439",
+        "node_ids": [
+          "node_damagedHelmet_-6514"
+        ],
+        "color": "#ff6b00",
+        "exclusive": true
+      },
+      "output": {
+        "type": "highlight",
+        "nodeIds": [
+          "node_damagedHelmet_-6514"
+        ],
+        "color": "#ff6b00",
+        "exclusive": true
+      },
+      "is_error": false
+    },
+    {
       "name": "mcp__modelsense__camera_focus",
       "input": {
-        "session_id": "75a19e03-fdf0-4265-a2c6-5452c1283ab3",
+        "session_id": "68f1b01b-e9ea-4463-b2bd-4c63b0736439",
         "node_id": "node_damagedHelmet_-6514"
       },
       "output": {
@@ -79,6 +99,14 @@
   ],
   "scene_commands": [
     {
+      "type": "highlight",
+      "nodeIds": [
+        "node_damagedHelmet_-6514"
+      ],
+      "color": "#ff6b00",
+      "exclusive": true
+    },
+    {
       "type": "camera_focus",
       "nodeId": "node_damagedHelmet_-6514",
       "center": [
@@ -90,13 +118,13 @@
     }
   ],
   "approvals": [],
-  "final_text": "Camera zoomed and framed on the helmet mesh (center \u2248 [0, 0, -0.19], radius \u2248 1.64 scene units).",
+  "final_text": "Highlighted the helmet mesh (15,452 triangles) in orange and framed the camera on it.",
   "usage": {
-    "turns": 4,
-    "cost_usd": 0.13297599999999998,
-    "duration_ms": 11185.0,
-    "input_tokens": 7450,
-    "output_tokens": 434
+    "turns": 5,
+    "cost_usd": 0.1347598,
+    "duration_ms": 9119.0,
+    "input_tokens": 7348,
+    "output_tokens": 526
   },
   "error": null
 }

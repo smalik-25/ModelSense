@@ -9,7 +9,7 @@
         "model_id": "DamagedHelmet"
       },
       "output": {
-        "session_id": "seed-DamagedHelmet",
+        "session_id": "e09c3860-528e-4e29-8e88-70ec4eadef6c",
         "model_id": "DamagedHelmet",
         "name": "Damaged Helmet",
         "counts": {
@@ -31,13 +31,12 @@
     {
       "name": "mcp__modelsense__export_report",
       "input": {
-        "session_id": "s",
-        "format": "markdown"
+        "session_id": "e09c3860-528e-4e29-8e88-70ec4eadef6c"
       },
       "output": {
         "format": "markdown",
-        "markdown": "# ModelSense report: Damaged Helmet\n...",
-        "generatedAt": "2026-07-08T00:00:00.000Z"
+        "markdown": "# ModelSense report: Damaged Helmet\n\nGenerated 2026-07-08T08:52:00.389Z\n\n## Summary\n\n- Nodes 1, meshes 1, materials 1, textures 5, animations 0\n- Triangles 15452, vertices 14556\n- Draw call estimate 1\n- Extensions: none\n\n## Heaviest meshes\n\n| mesh | triangles | vertices | size (bytes) |\n|---|---:|---:|---:|\n| mesh_helmet_LP_13930damagedHelmet | 15452 | 14556 | 558504 |\n\n## Textures\n\n| name | resolution | mime | gpu (bytes) |\n|---|---|---|---:|\n| (unnamed) | 2048x2048 | image/jpeg | 22369620 |\n| (unnamed) | 2048x2048 | image/jpeg | 22369620 |\n| (unnamed) | 2048x2048 | image/jpeg | 22369620 |\n| (unnamed) | 2048x2048 | image/jpeg | 22369620 |\n| (unnamed) | 2048x2048 | image/jpeg | 22369620 |\n\n_Units are glTF scene units._",
+        "generatedAt": "2026-07-08T08:52:00.389Z"
       },
       "is_error": false
     }
@@ -49,13 +48,13 @@
       "decision": "approve"
     }
   ],
-  "final_text": "Approved and exported the markdown report for the Damaged Helmet scene.",
+  "final_text": "Report generated.\n\n## Damaged Helmet \u2014 scene report\n\n**Summary**: 1 node, 1 mesh, 1 material, 5 textures, 0 animations. 15,452 triangles / 14,556 vertices. 1 draw call. No glTF extensions used.\n\n**Heaviest mesh**: `mesh_helmet_LP_13930damagedHelmet` \u2014 15,452 triangles, 14,556 vertices, 558,504 bytes.\n\n**Textures**: all 5 are 2048\u00d72048 JPEGs, ~22.4 MB of GPU memory each (~112 MB total uncompressed on GPU) \u2014 no KTX2/compressed variants.\n\nLet me know if you'd like `suggest_optimizations` run against a texture or triangle budget, or the full markdown saved somewhere.",
   "usage": {
     "turns": 3,
-    "cost_usd": 0.1,
-    "duration_ms": 6400,
-    "input_tokens": 4500,
-    "output_tokens": 360
+    "cost_usd": 0.1056462,
+    "duration_ms": 9280.0,
+    "input_tokens": 7448,
+    "output_tokens": 437
   },
   "error": null
 }

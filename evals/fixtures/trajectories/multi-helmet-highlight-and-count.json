@@ -1,6 +1,6 @@
 {
-  "task_id": "multi-helmet-camera",
-  "prompt": "Zoom the camera in on the helmet.",
+  "task_id": "multi-helmet-highlight-and-count",
+  "prompt": "Highlight the helmet and tell me its triangle count.",
   "model_id": "DamagedHelmet",
   "tools": [
     {
@@ -9,7 +9,7 @@
         "model_id": "DamagedHelmet"
       },
       "output": {
-        "session_id": "75a19e03-fdf0-4265-a2c6-5452c1283ab3",
+        "session_id": "248bc18d-cec6-4e97-9f17-24a754b8d011",
         "model_id": "DamagedHelmet",
         "name": "Damaged Helmet",
         "counts": {
@@ -31,7 +31,7 @@
     {
       "name": "mcp__modelsense__find_elements",
       "input": {
-        "session_id": "75a19e03-fdf0-4265-a2c6-5452c1283ab3",
+        "session_id": "248bc18d-cec6-4e97-9f17-24a754b8d011",
         "query": "helmet"
       },
       "output": {
@@ -59,44 +59,44 @@
       "is_error": false
     },
     {
-      "name": "mcp__modelsense__camera_focus",
+      "name": "mcp__modelsense__highlight_elements",
       "input": {
-        "session_id": "75a19e03-fdf0-4265-a2c6-5452c1283ab3",
-        "node_id": "node_damagedHelmet_-6514"
+        "session_id": "248bc18d-cec6-4e97-9f17-24a754b8d011",
+        "node_ids": [
+          "node_damagedHelmet_-6514"
+        ],
+        "color": "#ff6600",
+        "exclusive": true
       },
       "output": {
-        "type": "camera_focus",
-        "nodeId": "node_damagedHelmet_-6514",
-        "center": [
-          -0.0024815797805786133,
-          1.051233508486682e-05,
-          -0.18715500186327721
+        "type": "highlight",
+        "nodeIds": [
+          "node_damagedHelmet_-6514"
         ],
-        "radius": 1.64461395145069
+        "color": "#ff6600",
+        "exclusive": true
       },
       "is_error": false
     }
   ],
   "scene_commands": [
     {
-      "type": "camera_focus",
-      "nodeId": "node_damagedHelmet_-6514",
-      "center": [
-        -0.0024815797805786133,
-        1.051233508486682e-05,
-        -0.18715500186327721
+      "type": "highlight",
+      "nodeIds": [
+        "node_damagedHelmet_-6514"
       ],
-      "radius": 1.64461395145069
+      "color": "#ff6600",
+      "exclusive": true
     }
   ],
   "approvals": [],
-  "final_text": "Camera zoomed and framed on the helmet mesh (center \u2248 [0, 0, -0.19], radius \u2248 1.64 scene units).",
+  "final_text": "Highlighted the helmet mesh in the viewer. It has **15,452 triangles** (14,556 vertices) \u2014 that's the entire model, since it's a single mesh node.",
   "usage": {
     "turns": 4,
-    "cost_usd": 0.13297599999999998,
-    "duration_ms": 11185.0,
-    "input_tokens": 7450,
-    "output_tokens": 434
+    "cost_usd": 0.1331489,
+    "duration_ms": 9969.0,
+    "input_tokens": 7349,
+    "output_tokens": 494
   },
   "error": null
 }

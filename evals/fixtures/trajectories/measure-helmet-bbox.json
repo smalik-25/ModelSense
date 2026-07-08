@@ -1,6 +1,6 @@
 {
-  "task_id": "multi-helmet-camera",
-  "prompt": "Zoom the camera in on the helmet.",
+  "task_id": "measure-helmet-bbox",
+  "prompt": "How big is the helmet? Give me its bounding box size.",
   "model_id": "DamagedHelmet",
   "tools": [
     {
@@ -9,7 +9,7 @@
         "model_id": "DamagedHelmet"
       },
       "output": {
-        "session_id": "75a19e03-fdf0-4265-a2c6-5452c1283ab3",
+        "session_id": "d7562718-96a9-461c-8608-a27607d30c7e",
         "model_id": "DamagedHelmet",
         "name": "Damaged Helmet",
         "counts": {
@@ -31,7 +31,7 @@
     {
       "name": "mcp__modelsense__find_elements",
       "input": {
-        "session_id": "75a19e03-fdf0-4265-a2c6-5452c1283ab3",
+        "session_id": "d7562718-96a9-461c-8608-a27607d30c7e",
         "query": "helmet"
       },
       "output": {
@@ -59,44 +59,60 @@
       "is_error": false
     },
     {
-      "name": "mcp__modelsense__camera_focus",
+      "name": "mcp__modelsense__measure",
       "input": {
-        "session_id": "75a19e03-fdf0-4265-a2c6-5452c1283ab3",
+        "session_id": "d7562718-96a9-461c-8608-a27607d30c7e",
         "node_id": "node_damagedHelmet_-6514"
       },
       "output": {
-        "type": "camera_focus",
-        "nodeId": "node_damagedHelmet_-6514",
-        "center": [
-          -0.0024815797805786133,
-          1.051233508486682e-05,
-          -0.18715500186327721
+        "type": "measurement",
+        "label": "bbox 1.89 x 1.802 x 2 (diagonal 3.289) scene units",
+        "points": [
+          [
+            -0.9474585652351379,
+            -0.9009741103874731,
+            -1.187155129805747
+          ],
+          [
+            0.9424954056739807,
+            0.9009951350576428,
+            0.8128451260791926
+          ]
         ],
-        "radius": 1.64461395145069
+        "value": 3.289,
+        "unit": "scene-units"
       },
       "is_error": false
     }
   ],
   "scene_commands": [
     {
-      "type": "camera_focus",
-      "nodeId": "node_damagedHelmet_-6514",
-      "center": [
-        -0.0024815797805786133,
-        1.051233508486682e-05,
-        -0.18715500186327721
+      "type": "measurement",
+      "label": "bbox 1.89 x 1.802 x 2 (diagonal 3.289) scene units",
+      "points": [
+        [
+          -0.9474585652351379,
+          -0.9009741103874731,
+          -1.187155129805747
+        ],
+        [
+          0.9424954056739807,
+          0.9009951350576428,
+          0.8128451260791926
+        ]
       ],
-      "radius": 1.64461395145069
+      "value": 3.289,
+      "unit": "scene-units"
     }
   ],
   "approvals": [],
-  "final_text": "Camera zoomed and framed on the helmet mesh (center \u2248 [0, 0, -0.19], radius \u2248 1.64 scene units).",
+  "final_text": "The helmet's bounding box is about **1.89 \u00d7 1.80 \u00d7 2.00** scene units (width \u00d7 height \u00d7 depth), with a diagonal of **3.29** units. glTF has no real-world unit, so this is relative scale only \u2014 not meters or any physical measure unless the asset's authors intended one.",
   "usage": {
     "turns": 4,
-    "cost_usd": 0.13297599999999998,
-    "duration_ms": 11185.0,
+    "cost_usd": 0.1405419,
+    "duration_ms": 18975.0,
     "input_tokens": 7450,
-    "output_tokens": 434
+    "output_tokens": 569
   },
   "error": null
 }
