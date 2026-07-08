@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type {
   CameraFocusCommand,
   HighlightCommand,
@@ -7,11 +7,17 @@ import type {
 } from '@modelsense/shared';
 import { Viewer } from './components/Viewer';
 import { Chat } from './components/Chat';
+import { wakeAgent } from './lib/agentClient';
 import { WEB_CATALOG } from './catalog';
 
 const DEFAULT_MODEL = WEB_CATALOG[0]!;
 
 export function App() {
+  // Wake the Render free-tier service on load so the first chat is not a cold start.
+  useEffect(() => {
+    wakeAgent();
+  }, []);
+
   const [modelId, setModelId] = useState(DEFAULT_MODEL.id);
   const [highlight, setHighlight] = useState<HighlightCommand | null>(null);
   const [camera, setCamera] = useState<CameraFocusCommand | null>(null);

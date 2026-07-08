@@ -18,7 +18,16 @@ export function createAgentApp(env: Env): express.Express {
   app.use(express.json({ limit: '1mb' }));
 
   app.use((req: Request, res: Response, next) => {
-    res.setHeader('Access-Control-Allow-Origin', env.webOrigin);
+    const origin = req.headers.origin;
+    if (env.webOrigin === '*') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    } else if (origin && origin.replace(/\/+$/, '') === env.webOrigin) {
+      // Echo the browser's exact Origin (tolerates a trailing slash in config).
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Vary', 'Origin');
+    } else {
+      res.setHeader('Access-Control-Allow-Origin', env.webOrigin);
+    }
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') {

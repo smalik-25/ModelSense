@@ -2,7 +2,15 @@ import type { SceneCommand } from '@modelsense/shared';
 
 export type AgentEvent =
   | { t: 'text'; text: string }
-  | { t: 'tool'; phase: 'call' | 'result'; name: string; ok?: boolean }
+  | {
+      t: 'tool';
+      phase: 'call' | 'result';
+      name: string;
+      id?: string;
+      ok?: boolean;
+      input?: unknown;
+      output?: unknown;
+    }
   | { t: 'scene'; command: SceneCommand }
   | { t: 'approval'; id: string; tool: string; input: unknown }
   | { t: 'error'; message: string }
@@ -16,7 +24,9 @@ export type AgentEvent =
       traceUrl?: string;
     };
 
-const AGENT_URL = import.meta.env.VITE_AGENT_URL ?? 'http://localhost:8787';
+// `||` (not `??`) so an empty string also falls back instead of producing a
+// relative POST that would hit the static host.
+const AGENT_URL = import.meta.env.VITE_AGENT_URL || 'http://localhost:8787';
 
 /**
  * Stream a chat turn. EventSource cannot POST, so we read the SSE body from a
@@ -54,6 +64,13 @@ export async function streamChat(
       }
     }
   }
+}
+
+/** Fire-and-forget ping to wake the Render free-tier service before the user types. */
+export function wakeAgent(): void {
+  fetch(`${AGENT_URL}/healthz`, { method: 'GET' }).catch(() => {
+    // ignore; the server may be cold-starting
+  });
 }
 
 export async function approve(id: string, approved: boolean): Promise<void> {

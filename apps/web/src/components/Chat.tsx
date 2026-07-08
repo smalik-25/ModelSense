@@ -79,7 +79,14 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
     try {
       await streamChat({ message: text, modelId }, onEvent, ac.signal);
     } catch (err) {
-      if (!ac.signal.aborted) setError(err instanceof Error ? err.message : 'Request failed');
+      if (!ac.signal.aborted) {
+        const msg = err instanceof Error ? err.message : 'Request failed';
+        setError(
+          /fetch/i.test(msg)
+            ? 'Could not reach the agent. The server may be waking up (free-tier cold start, ~30-60s). Please try again.'
+            : msg,
+        );
+      }
     } finally {
       setBusy(false);
     }
