@@ -16,12 +16,24 @@ const SAFE_TOOLS = [
   'highlight_elements',
   'camera_focus',
   'measure',
+  'suggest_optimizations',
 ].map((t) => `mcp__${SERVER}__${t}`);
 const GATED_TOOL = `mcp__${SERVER}__export_report`;
 
 export type AgentEvent =
   | { t: 'text'; text: string }
-  | { t: 'tool'; phase: 'call' | 'result'; name: string; ok?: boolean }
+  | {
+      t: 'tool';
+      phase: 'call' | 'result';
+      name: string;
+      /** tool_use id, so call and result frames can be paired (eval trajectory). */
+      id?: string;
+      ok?: boolean;
+      /** Present on a 'call' frame: the arguments the model passed. */
+      input?: unknown;
+      /** Present on a 'result' frame: the tool's structuredContent (or error text). */
+      output?: unknown;
+    }
   | { t: 'scene'; command: SceneCommandType }
   | { t: 'approval'; id: string; tool: string; input: unknown }
   | { t: 'error'; message: string }
@@ -77,6 +89,29 @@ export function extractScene(content: unknown): SceneCommandType | null {
   return null;
 }
 
+/**
+ * Pull the tool's payload out of a tool_result for observability. Successful
+ * tools mirror their structuredContent as a JSON text block; errors carry a
+ * plain message. Returns the parsed JSON when possible, else `{ text }`.
+ */
+export function extractToolOutput(content: unknown): unknown {
+  const texts: string[] = [];
+  if (typeof content === 'string') texts.push(content);
+  else if (Array.isArray(content)) {
+    for (const c of content) {
+      const block = c as Block;
+      if (block?.type === 'text' && typeof block.text === 'string') texts.push(block.text);
+    }
+  }
+  if (texts.length === 0) return null;
+  const joined = texts.join('\n');
+  try {
+    return JSON.parse(joined);
+  } catch {
+    return { text: joined };
+  }
+}
+
 async function* singleUserMessage(text: string): AsyncGenerator<SDKUserMessage> {
   yield {
     type: 'user',
@@ -102,6 +137,8 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
   signal.addEventListener('abort', () => abort.abort());
   const trace = startTurnTrace(env, message, modelId);
   let finalText = '';
+  // Pair tool_result frames back to the tool that produced them (by tool_use id).
+  const toolNames = new Map<string, string>();
 
   try {
     for await (const msg of query({
@@ -146,7 +183,8 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
             finalText += block.text;
             emit({ t: 'text', text: block.text });
           } else if (block.type === 'tool_use' && block.name && block.id) {
-            emit({ t: 'tool', phase: 'call', name: block.name });
+            toolNames.set(block.id, block.name);
+            emit({ t: 'tool', phase: 'call', name: block.name, id: block.id, input: block.input });
             trace?.toolStart(block.id, block.name, block.input);
           }
         }
@@ -158,8 +196,16 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
             if (block.type === 'tool_result') {
               const scene = extractScene(block.content);
               if (scene) emit({ t: 'scene', command: scene });
-              emit({ t: 'tool', phase: 'result', name: 'result', ok: !block.is_error });
-              if (block.tool_use_id) trace?.toolEnd(block.tool_use_id, block.content, !!block.is_error);
+              const id = block.tool_use_id;
+              emit({
+                t: 'tool',
+                phase: 'result',
+                name: (id && toolNames.get(id)) || 'result',
+                id,
+                ok: !block.is_error,
+                output: extractToolOutput(block.content),
+              });
+              if (id) trace?.toolEnd(id, block.content, !!block.is_error);
             }
           }
         }
