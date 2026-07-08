@@ -1,0 +1,165 @@
+# Optimization tasks (10): the agent calls suggest_optimizations and narrates the
+# ranked findings. The worst offender (findings[0]) and budget flags are checked
+# deterministically against reference.json / the tool output.
+
+- id: opt-helmet-what-to-optimize
+  category: optimization
+  difficulty: medium
+  prompt: What would you optimize to make this model lighter?
+  model_id: DamagedHelmet
+  judge: true
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+  assertions:
+    - kind: tool_output
+      tool: suggest_optimizations
+      path: findings.0.kind
+      ref: DamagedHelmet.optimizations.findings.0.kind
+    - kind: answer_matches
+      value: "texture|resize|compress"
+
+- id: opt-helmet-worst-offender
+  category: optimization
+  difficulty: medium
+  prompt: What is the single worst offender for GPU memory in this scene?
+  model_id: DamagedHelmet
+  judge: true
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+  assertions:
+    - kind: tool_output
+      tool: suggest_optimizations
+      path: findings.0.kind
+      ref: DamagedHelmet.optimizations.findings.0.kind
+    - kind: answer_matches
+      value: "texture"
+
+- id: opt-helmet-textures
+  category: optimization
+  difficulty: medium
+  prompt: The textures feel heavy. What are they and what would you do about them?
+  model_id: DamagedHelmet
+  judge: true
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+  assertions:
+    - kind: tool_called
+      value: suggest_optimizations
+    - kind: answer_matches
+      value: "2048|1024|resize|compress|ktx"
+
+- id: opt-helmet-mesh-compression
+  category: optimization
+  difficulty: hard
+  prompt: Is this model using geometry compression, and should it?
+  model_id: DamagedHelmet
+  judge: true
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+  assertions:
+    - kind: tool_called
+      value: suggest_optimizations
+    - kind: answer_matches
+      value: "draco|meshopt|compress"
+
+- id: opt-truck-what-to-optimize
+  category: optimization
+  difficulty: medium
+  prompt: If you had to shrink this truck's footprint, what would you change first?
+  model_id: CesiumMilkTruck
+  judge: true
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+  assertions:
+    - kind: tool_output
+      tool: suggest_optimizations
+      path: findings.0.kind
+      ref: CesiumMilkTruck.optimizations.findings.0.kind
+    - kind: answer_matches
+      value: "texture|resize|compress"
+
+- id: opt-truck-duplicate-materials
+  category: optimization
+  difficulty: hard
+  prompt: Are there any redundant materials on this truck that could be merged?
+  model_id: CesiumMilkTruck
+  judge: true
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+  assertions:
+    - kind: tool_called
+      value: suggest_optimizations
+    - kind: answer_matches
+      value: "duplicate|redundant|merge|material"
+
+- id: opt-helmet-triangle-budget
+  category: optimization
+  difficulty: hard
+  prompt: How would I get this model under 10,000 triangles?
+  model_id: DamagedHelmet
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+      args: { budget_triangles: { approx: 10000, tolerance: 1 } }
+  assertions:
+    - kind: tool_output
+      tool: suggest_optimizations
+      path: overBudget.triangles
+      value: true
+
+- id: opt-truck-texture-budget
+  category: optimization
+  difficulty: hard
+  prompt: Keep GPU texture memory under 5 MB. What has to give?
+  model_id: CesiumMilkTruck
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+      args: { budget_texture_mb: { approx: 5, tolerance: 0.5 } }
+  assertions:
+    - kind: tool_output
+      tool: suggest_optimizations
+      path: overBudget.texture
+      value: true
+
+- id: opt-box-nothing-to-do
+  category: optimization
+  difficulty: medium
+  prompt: Is there anything worth optimizing on this box?
+  model_id: Box
+  judge: true
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+  assertions:
+    - kind: tool_output
+      tool: suggest_optimizations
+      path: totals.triangles
+      ref: Box.optimizations.totals.triangles
+    - kind: answer_matches
+      value: "no|nothing|already|minimal|little|small|fine|efficient|trivial"
+
+- id: opt-helmet-list-all
+  category: optimization
+  difficulty: medium
+  prompt: List the optimization opportunities you can find for this model.
+  model_id: DamagedHelmet
+  judge: true
+  expected_tools:
+    - name: load_model
+    - name: suggest_optimizations
+  assertions:
+    - kind: tool_called
+      value: suggest_optimizations
+    - kind: answer_matches
+      value: "texture|compress"

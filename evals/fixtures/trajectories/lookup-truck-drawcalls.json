@@ -1,0 +1,87 @@
+{
+  "task_id": "lookup-truck-drawcalls",
+  "prompt": "Estimate the number of draw calls this truck needs.",
+  "model_id": "CesiumMilkTruck",
+  "tools": [
+    {
+      "name": "mcp__modelsense__load_model",
+      "input": {
+        "model_id": "CesiumMilkTruck"
+      },
+      "output": {
+        "session_id": "seed-CesiumMilkTruck",
+        "model_id": "CesiumMilkTruck",
+        "name": "Cesium Milk Truck",
+        "counts": {
+          "nodes": 6,
+          "meshes": 2,
+          "materials": 4,
+          "textures": 1,
+          "animations": 1
+        },
+        "totals": {
+          "vertices": 3995,
+          "triangles": 2856
+        },
+        "extensionsUsed": [],
+        "fileSizeBytes": 369980
+      },
+      "is_error": false
+    },
+    {
+      "name": "mcp__modelsense__get_scene_stats",
+      "input": {
+        "session_id": "s"
+      },
+      "output": {
+        "scope": "scene",
+        "totals": {
+          "vertices": 3995,
+          "triangles": 2856,
+          "drawCallEstimate": 4,
+          "materials": 4,
+          "textures": 1
+        },
+        "meshes": [
+          {
+            "id": "mesh-0",
+            "name": "Wheels",
+            "vertices": 828,
+            "triangles": 768,
+            "sizeBytes": 31104,
+            "instances": 2
+          },
+          {
+            "id": "mesh-1",
+            "name": "Cesium_Milk_Truck",
+            "vertices": 3167,
+            "triangles": 2088,
+            "sizeBytes": 113872,
+            "instances": 1
+          }
+        ],
+        "textures": [
+          {
+            "name": "CesiumMilkTruck.jpg",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 218979,
+            "gpuSizeBytes": 22369620
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "scene_commands": [],
+  "approvals": [],
+  "final_text": "About 4 draw calls, one per mesh primitive.",
+  "usage": {
+    "turns": 4,
+    "cost_usd": 0.15,
+    "duration_ms": 9100,
+    "input_tokens": 6000,
+    "output_tokens": 480
+  },
+  "error": null
+}

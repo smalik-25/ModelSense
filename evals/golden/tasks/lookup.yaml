@@ -1,0 +1,187 @@
+# Lookup tasks (12): answer a single deterministic fact about the model. Expected
+# values are pulled from reference.json by dotted `ref`, never hand-typed.
+
+- id: lookup-helmet-triangles
+  category: lookup
+  difficulty: easy
+  prompt: How many triangles does this model have?
+  model_id: DamagedHelmet
+  judge: true
+  expected_tools:
+    - name: load_model
+      args: { model_id: DamagedHelmet }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: totals.triangles
+      ref: DamagedHelmet.totals.triangles
+    - kind: answer_contains_number
+      ref: DamagedHelmet.totals.triangles
+
+- id: lookup-helmet-vertices
+  category: lookup
+  difficulty: easy
+  prompt: What is the vertex count of this model?
+  model_id: DamagedHelmet
+  judge: true
+  expected_tools:
+    - name: load_model
+      args: { model_id: DamagedHelmet }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: totals.vertices
+      ref: DamagedHelmet.totals.vertices
+    - kind: answer_contains_number
+      ref: DamagedHelmet.totals.vertices
+
+- id: lookup-helmet-textures
+  category: lookup
+  difficulty: easy
+  prompt: How many textures does this helmet use?
+  model_id: DamagedHelmet
+  judge: true
+  expected_tools:
+    - name: load_model
+      args: { model_id: DamagedHelmet }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: counts.textures
+      ref: DamagedHelmet.counts.textures
+
+- id: lookup-helmet-materials
+  category: lookup
+  difficulty: easy
+  prompt: How many materials are on this model?
+  model_id: DamagedHelmet
+  expected_tools:
+    - name: load_model
+      args: { model_id: DamagedHelmet }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: counts.materials
+      ref: DamagedHelmet.counts.materials
+
+- id: lookup-helmet-drawcalls
+  category: lookup
+  difficulty: medium
+  prompt: What is the draw call estimate for this scene?
+  model_id: DamagedHelmet
+  judge: true
+  expected_tools:
+    - name: load_model
+      args: { model_id: DamagedHelmet }
+    - name: get_scene_stats
+  assertions:
+    - kind: tool_output
+      tool: get_scene_stats
+      path: totals.drawCallEstimate
+      ref: DamagedHelmet.sceneStats.totals.drawCallEstimate
+
+- id: lookup-truck-nodes
+  category: lookup
+  difficulty: easy
+  prompt: How many nodes are in this truck model?
+  model_id: CesiumMilkTruck
+  expected_tools:
+    - name: load_model
+      args: { model_id: CesiumMilkTruck }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: counts.nodes
+      ref: CesiumMilkTruck.counts.nodes
+
+- id: lookup-truck-meshes
+  category: lookup
+  difficulty: easy
+  prompt: How many meshes does the milk truck contain?
+  model_id: CesiumMilkTruck
+  expected_tools:
+    - name: load_model
+      args: { model_id: CesiumMilkTruck }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: counts.meshes
+      ref: CesiumMilkTruck.counts.meshes
+
+- id: lookup-truck-triangles
+  category: lookup
+  difficulty: easy
+  prompt: What is the total triangle count of this truck?
+  model_id: CesiumMilkTruck
+  judge: true
+  expected_tools:
+    - name: load_model
+      args: { model_id: CesiumMilkTruck }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: totals.triangles
+      ref: CesiumMilkTruck.totals.triangles
+    - kind: answer_contains_number
+      ref: CesiumMilkTruck.totals.triangles
+
+- id: lookup-truck-materials
+  category: lookup
+  difficulty: easy
+  prompt: How many distinct materials does this model use?
+  model_id: CesiumMilkTruck
+  expected_tools:
+    - name: load_model
+      args: { model_id: CesiumMilkTruck }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: counts.materials
+      ref: CesiumMilkTruck.counts.materials
+
+- id: lookup-truck-animations
+  category: lookup
+  difficulty: medium
+  prompt: Does this model have any animations, and how many?
+  model_id: CesiumMilkTruck
+  expected_tools:
+    - name: load_model
+      args: { model_id: CesiumMilkTruck }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: counts.animations
+      ref: CesiumMilkTruck.counts.animations
+
+- id: lookup-truck-drawcalls
+  category: lookup
+  difficulty: medium
+  prompt: Estimate the number of draw calls this truck needs.
+  model_id: CesiumMilkTruck
+  judge: true
+  expected_tools:
+    - name: load_model
+      args: { model_id: CesiumMilkTruck }
+    - name: get_scene_stats
+  assertions:
+    - kind: tool_output
+      tool: get_scene_stats
+      path: totals.drawCallEstimate
+      ref: CesiumMilkTruck.sceneStats.totals.drawCallEstimate
+
+- id: lookup-box-triangles
+  category: lookup
+  difficulty: easy
+  prompt: How many triangles make up this box?
+  model_id: Box
+  judge: true
+  expected_tools:
+    - name: load_model
+      args: { model_id: Box }
+  assertions:
+    - kind: tool_output
+      tool: load_model
+      path: totals.triangles
+      ref: Box.totals.triangles
+    - kind: answer_contains_number
+      ref: Box.totals.triangles

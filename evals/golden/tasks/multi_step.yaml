@@ -1,0 +1,226 @@
+# Multi-step tasks (14): the agent chains inspection + a scene action. Outcomes
+# are checked on the emitted scene commands (highlight / camera_focus), which the
+# agent forwards verbatim from tool structuredContent.
+
+- id: multi-truck-wheels-highlight-largest
+  category: multi_step
+  difficulty: medium
+  prompt: Find every node with "wheel" in the name and highlight the largest one.
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+      args: { model_id: CesiumMilkTruck }
+    - name: find_elements
+      args: { query: { regex: "(?i)wheel" } }
+    - name: highlight_elements
+  assertions:
+    - kind: scene_command
+      command_type: highlight
+
+- id: multi-truck-highlight-largest-object
+  category: multi_step
+  difficulty: medium
+  prompt: Highlight the single largest object in this scene.
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: find_elements
+    - name: highlight_elements
+  assertions:
+    - kind: scene_command
+      command_type: highlight
+    - kind: highlight_includes
+      node_ref: CesiumMilkTruck.largestNode.id
+
+- id: multi-helmet-highlight
+  category: multi_step
+  difficulty: medium
+  prompt: Highlight the helmet mesh so I can see it.
+  model_id: DamagedHelmet
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: find_elements
+    - name: highlight_elements
+  assertions:
+    - kind: highlight_includes
+      node_ref: DamagedHelmet.largestNode.id
+
+- id: multi-truck-highlight-both-wheels
+  category: multi_step
+  difficulty: medium
+  prompt: Highlight both wheels of the truck.
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: find_elements
+      args: { query: { regex: "(?i)wheel" } }
+    - name: highlight_elements
+  assertions:
+    - kind: highlight_includes
+      node: Wheels
+    - kind: highlight_includes
+      node: Wheels.001
+
+- id: multi-truck-highlight-nodes-named-node
+  category: multi_step
+  difficulty: hard
+  prompt: Highlight every node whose name contains "Node".
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: find_elements
+      args: { query: { regex: "(?i)node" } }
+    - name: highlight_elements
+  assertions:
+    - kind: highlight_includes
+      node: Node
+    - kind: highlight_includes
+      node: Node.001
+
+- id: multi-truck-camera-body
+  category: multi_step
+  difficulty: medium
+  prompt: Frame the camera on the truck body.
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: camera_focus
+  assertions:
+    - kind: camera_targets
+      node_ref: CesiumMilkTruck.largestNode.id
+
+- id: multi-truck-camera-wheels
+  category: multi_step
+  difficulty: medium
+  prompt: Focus the camera on the wheels.
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: camera_focus
+  assertions:
+    - kind: scene_command
+      command_type: camera_focus
+
+- id: multi-helmet-camera
+  category: multi_step
+  difficulty: easy
+  prompt: Zoom the camera in on the helmet.
+  model_id: DamagedHelmet
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: camera_focus
+  assertions:
+    - kind: scene_command
+      command_type: camera_focus
+
+- id: multi-truck-heaviest-mesh-highlight
+  category: multi_step
+  difficulty: hard
+  prompt: Which mesh has the most triangles? Highlight it and tell me the count.
+  model_id: CesiumMilkTruck
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: find_elements
+    - name: highlight_elements
+  assertions:
+    - kind: highlight_includes
+      node_ref: CesiumMilkTruck.largestNode.id
+    - kind: answer_contains_number
+      ref: CesiumMilkTruck.largestNode.triangles
+
+- id: multi-truck-highlight-color
+  category: multi_step
+  difficulty: medium
+  prompt: Highlight the wheels in green.
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: find_elements
+      args: { query: { regex: "(?i)wheel" } }
+    - name: highlight_elements
+      args: { color: { regex: "^#" } }
+  assertions:
+    - kind: scene_command
+      command_type: highlight
+
+- id: multi-truck-count-and-focus
+  category: multi_step
+  difficulty: medium
+  prompt: How many wheels does the truck have, and focus the camera on one of them.
+  model_id: CesiumMilkTruck
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: find_elements
+      args: { query: { regex: "(?i)wheel" } }
+    - name: camera_focus
+  assertions:
+    - kind: scene_command
+      command_type: camera_focus
+    - kind: answer_contains_number
+      value: 2
+
+- id: multi-helmet-highlight-and-count
+  category: multi_step
+  difficulty: hard
+  prompt: Highlight the helmet and tell me its triangle count.
+  model_id: DamagedHelmet
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: find_elements
+    - name: highlight_elements
+  assertions:
+    - kind: scene_command
+      command_type: highlight
+    - kind: answer_contains_number
+      ref: DamagedHelmet.totals.triangles
+
+- id: multi-truck-compare-wheels
+  category: multi_step
+  difficulty: hard
+  prompt: Are the two wheels the same size? Highlight both to show me.
+  model_id: CesiumMilkTruck
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: find_elements
+      args: { query: { regex: "(?i)wheel" } }
+    - name: highlight_elements
+  assertions:
+    - kind: highlight_includes
+      node: Wheels
+    - kind: highlight_includes
+      node: Wheels.001
+    - kind: answer_matches
+      value: "same|equal|identical|tied|both.*768"
+
+- id: multi-helmet-complexity-rundown
+  category: multi_step
+  difficulty: medium
+  prompt: Give me a rundown of this model's geometry complexity.
+  model_id: DamagedHelmet
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: get_scene_stats
+  assertions:
+    - kind: tool_called
+      value: get_scene_stats
+    - kind: answer_contains_number
+      ref: DamagedHelmet.totals.triangles

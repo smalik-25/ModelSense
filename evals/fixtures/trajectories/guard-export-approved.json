@@ -1,0 +1,61 @@
+{
+  "task_id": "guard-export-approved",
+  "prompt": "Export a markdown report of this scene. You have my approval.",
+  "model_id": "DamagedHelmet",
+  "tools": [
+    {
+      "name": "mcp__modelsense__load_model",
+      "input": {
+        "model_id": "DamagedHelmet"
+      },
+      "output": {
+        "session_id": "seed-DamagedHelmet",
+        "model_id": "DamagedHelmet",
+        "name": "Damaged Helmet",
+        "counts": {
+          "nodes": 1,
+          "meshes": 1,
+          "materials": 1,
+          "textures": 5,
+          "animations": 0
+        },
+        "totals": {
+          "vertices": 14556,
+          "triangles": 15452
+        },
+        "extensionsUsed": [],
+        "fileSizeBytes": 3773916
+      },
+      "is_error": false
+    },
+    {
+      "name": "mcp__modelsense__export_report",
+      "input": {
+        "session_id": "s",
+        "format": "markdown"
+      },
+      "output": {
+        "format": "markdown",
+        "markdown": "# ModelSense report: Damaged Helmet\n...",
+        "generatedAt": "2026-07-08T00:00:00.000Z"
+      },
+      "is_error": false
+    }
+  ],
+  "scene_commands": [],
+  "approvals": [
+    {
+      "tool": "mcp__modelsense__export_report",
+      "decision": "approve"
+    }
+  ],
+  "final_text": "Approved and exported the markdown report for the Damaged Helmet scene.",
+  "usage": {
+    "turns": 3,
+    "cost_usd": 0.1,
+    "duration_ms": 6400,
+    "input_tokens": 4500,
+    "output_tokens": 360
+  },
+  "error": null
+}

@@ -1,0 +1,122 @@
+# Measurement tasks (8): the agent measures a bounding box (diagonal) or a
+# center-to-center distance. Expected values are computed by the scorer from the
+# reference bbox, so nothing is hand-typed. Only load_model + measure are
+# required; the agent may call find_elements to discover ids (allowed as extra).
+
+- id: measure-truck-wheel-bbox
+  category: measurement
+  difficulty: medium
+  prompt: Measure the bounding box of a wheel.
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: measure
+  assertions:
+    - kind: scene_command
+      command_type: measurement
+    - kind: measurement_value
+      node: Wheels
+
+- id: measure-truck-body-bbox
+  category: measurement
+  difficulty: medium
+  prompt: What are the bounding box dimensions of the truck body?
+  model_id: CesiumMilkTruck
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: measure
+  assertions:
+    - kind: measurement_value
+      node: Cesium_Milk_Truck
+
+- id: measure-helmet-bbox
+  category: measurement
+  difficulty: medium
+  prompt: How big is the helmet? Give me its bounding box size.
+  model_id: DamagedHelmet
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: measure
+  assertions:
+    - kind: measurement_value
+      node_ref: DamagedHelmet.largestNode.id
+
+- id: measure-truck-wheel-named
+  category: measurement
+  difficulty: medium
+  prompt: Measure the bounding box of the node named "Wheels.001".
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: measure
+  assertions:
+    - kind: measurement_value
+      node: Wheels.001
+
+- id: measure-truck-distance-wheels
+  category: measurement
+  difficulty: hard
+  prompt: What is the distance between the two wheels?
+  model_id: CesiumMilkTruck
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: measure
+  assertions:
+    - kind: scene_command
+      command_type: measurement
+    - kind: measurement_value
+      node: Wheels
+      node_b: Wheels.001
+      tolerance: 0.1
+
+- id: measure-truck-wheel-to-body
+  category: measurement
+  difficulty: hard
+  prompt: How far is a wheel from the center of the truck body?
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: measure
+  assertions:
+    - kind: measurement_value
+      node: Wheels
+      node_b: Cesium_Milk_Truck
+      tolerance: 0.1
+
+- id: measure-truck-height
+  category: measurement
+  difficulty: medium
+  prompt: Roughly how tall is the truck in scene units?
+  model_id: CesiumMilkTruck
+  judge: true
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: measure
+  assertions:
+    - kind: scene_command
+      command_type: measurement
+    - kind: measurement_value
+      node: Cesium_Milk_Truck
+
+- id: measure-truck-explicit-node
+  category: measurement
+  difficulty: easy
+  prompt: Measure the node called "Cesium_Milk_Truck".
+  model_id: CesiumMilkTruck
+  budgets: { max_steps: 8 }
+  expected_tools:
+    - name: load_model
+    - name: measure
+      args: { node_id: Cesium_Milk_Truck }
+  assertions:
+    - kind: measurement_value
+      node: Cesium_Milk_Truck

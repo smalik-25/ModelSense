@@ -1,0 +1,81 @@
+{
+  "task_id": "opt-helmet-triangle-budget",
+  "prompt": "How would I get this model under 10,000 triangles?",
+  "model_id": "DamagedHelmet",
+  "tools": [
+    {
+      "name": "mcp__modelsense__load_model",
+      "input": {
+        "model_id": "DamagedHelmet"
+      },
+      "output": {
+        "session_id": "seed-DamagedHelmet",
+        "model_id": "DamagedHelmet",
+        "name": "Damaged Helmet",
+        "counts": {
+          "nodes": 1,
+          "meshes": 1,
+          "materials": 1,
+          "textures": 5,
+          "animations": 0
+        },
+        "totals": {
+          "vertices": 14556,
+          "triangles": 15452
+        },
+        "extensionsUsed": [],
+        "fileSizeBytes": 3773916
+      },
+      "is_error": false
+    },
+    {
+      "name": "mcp__modelsense__suggest_optimizations",
+      "input": {
+        "session_id": "s",
+        "budget_triangles": 10000
+      },
+      "output": {
+        "totals": {
+          "triangles": 15452,
+          "textureGpuBytes": 111848100
+        },
+        "budget": {
+          "triangles": 10000,
+          "textureMb": null
+        },
+        "overBudget": {
+          "triangles": true,
+          "texture": false
+        },
+        "findings": [
+          {
+            "kind": "oversized_texture",
+            "severity": "medium",
+            "target": "2048x2048 texture",
+            "detail": "Texture is 2048x2048.",
+            "estimatedSavings": "~16.8 MB GPU"
+          },
+          {
+            "kind": "dense_mesh",
+            "severity": "medium",
+            "target": "mesh_helmet_LP_13930damagedHelmet",
+            "detail": "Mesh has 15,452 triangles against a 10,000 budget.",
+            "estimatedSavings": null
+          }
+        ]
+      },
+      "is_error": false
+    }
+  ],
+  "scene_commands": [],
+  "approvals": [],
+  "final_text": "You're over the 10,000 budget at 15,452 triangles; decimate the mesh and enable Draco compression.",
+  "usage": {
+    "turns": 4,
+    "cost_usd": 0.21,
+    "duration_ms": 12000,
+    "input_tokens": 6000,
+    "output_tokens": 480
+  },
+  "error": null
+}

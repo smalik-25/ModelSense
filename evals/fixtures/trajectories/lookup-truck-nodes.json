@@ -1,0 +1,43 @@
+{
+  "task_id": "lookup-truck-nodes",
+  "prompt": "How many nodes are in this truck model?",
+  "model_id": "CesiumMilkTruck",
+  "tools": [
+    {
+      "name": "mcp__modelsense__load_model",
+      "input": {
+        "model_id": "CesiumMilkTruck"
+      },
+      "output": {
+        "session_id": "seed-CesiumMilkTruck",
+        "model_id": "CesiumMilkTruck",
+        "name": "Cesium Milk Truck",
+        "counts": {
+          "nodes": 6,
+          "meshes": 2,
+          "materials": 4,
+          "textures": 1,
+          "animations": 1
+        },
+        "totals": {
+          "vertices": 3995,
+          "triangles": 2856
+        },
+        "extensionsUsed": [],
+        "fileSizeBytes": 369980
+      },
+      "is_error": false
+    }
+  ],
+  "scene_commands": [],
+  "approvals": [],
+  "final_text": "The truck scene has 6 nodes.",
+  "usage": {
+    "turns": 3,
+    "cost_usd": 0.1,
+    "duration_ms": 7200,
+    "input_tokens": 4500,
+    "output_tokens": 360
+  },
+  "error": null
+}

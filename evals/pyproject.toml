@@ -1,0 +1,45 @@
+[project]
+name = "modelsense-evals"
+version = "0.1.0"
+description = "Evaluation harness for the ModelSense agent: golden tasks, deterministic scorers, an LLM-as-judge for context fidelity, and a CI regression gate."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "pydantic>=2.9",
+  "pyyaml>=6.0",
+  "httpx>=0.27",
+  "pyarrow>=17",
+  "pandas>=2.2",
+  "anthropic>=0.40",
+  "matplotlib>=3.9",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "ruff>=0.7",
+]
+
+[project.scripts]
+evals = "modelsense_evals.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/modelsense_evals"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# The fixture generator is mostly long inline trajectory literals.
+"scripts/seed_fixtures.py" = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

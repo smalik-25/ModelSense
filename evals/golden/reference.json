@@ -1,0 +1,460 @@
+{
+  "schemaVersion": 1,
+  "generator": "apps/server/src/golden-cli.ts",
+  "models": {
+    "DamagedHelmet": {
+      "model_id": "DamagedHelmet",
+      "name": "Damaged Helmet",
+      "fileSizeBytes": 3773916,
+      "counts": {
+        "nodes": 1,
+        "meshes": 1,
+        "materials": 1,
+        "textures": 5,
+        "animations": 0
+      },
+      "totals": {
+        "vertices": 14556,
+        "triangles": 15452
+      },
+      "extensionsUsed": [],
+      "nodes": [
+        {
+          "id": "node_damagedHelmet_-6514",
+          "name": "node_damagedHelmet_-6514",
+          "type": "mesh",
+          "triangles": 15452,
+          "vertices": 14556,
+          "bboxMin": [
+            -0.9474585652351379,
+            -0.9009741103874731,
+            -1.187155129805747
+          ],
+          "bboxMax": [
+            0.9424954056739807,
+            0.9009951350576428,
+            0.8128451260791926
+          ]
+        }
+      ],
+      "largestNode": {
+        "id": "node_damagedHelmet_-6514",
+        "triangles": 15452
+      },
+      "sceneStats": {
+        "scope": "scene",
+        "totals": {
+          "vertices": 14556,
+          "triangles": 15452,
+          "drawCallEstimate": 1,
+          "materials": 1,
+          "textures": 5
+        },
+        "meshes": [
+          {
+            "id": "mesh-0",
+            "name": "mesh_helmet_LP_13930damagedHelmet",
+            "vertices": 14556,
+            "triangles": 15452,
+            "sizeBytes": 558504,
+            "instances": 1
+          }
+        ],
+        "textures": [
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 935629,
+            "gpuSizeBytes": 22369620
+          },
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 1300661,
+            "gpuSizeBytes": 22369620
+          },
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 97499,
+            "gpuSizeBytes": 22369620
+          },
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 361678,
+            "gpuSizeBytes": 22369620
+          },
+          {
+            "name": "",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 517757,
+            "gpuSizeBytes": 22369620
+          }
+        ]
+      },
+      "optimizations": {
+        "totals": {
+          "triangles": 15452,
+          "textureGpuBytes": 111848100
+        },
+        "budget": {
+          "triangles": null,
+          "textureMb": null
+        },
+        "overBudget": {
+          "triangles": false,
+          "texture": false
+        },
+        "findings": [
+          {
+            "kind": "oversized_texture",
+            "severity": "medium",
+            "target": "2048x2048 texture",
+            "detail": "Texture is 2048x2048 (22.4 MB GPU). Halving to 1024px cuts it to a quarter.",
+            "estimatedSavings": "~16.8 MB GPU"
+          },
+          {
+            "kind": "oversized_texture",
+            "severity": "medium",
+            "target": "2048x2048 texture",
+            "detail": "Texture is 2048x2048 (22.4 MB GPU). Halving to 1024px cuts it to a quarter.",
+            "estimatedSavings": "~16.8 MB GPU"
+          },
+          {
+            "kind": "oversized_texture",
+            "severity": "medium",
+            "target": "2048x2048 texture",
+            "detail": "Texture is 2048x2048 (22.4 MB GPU). Halving to 1024px cuts it to a quarter.",
+            "estimatedSavings": "~16.8 MB GPU"
+          },
+          {
+            "kind": "oversized_texture",
+            "severity": "medium",
+            "target": "2048x2048 texture",
+            "detail": "Texture is 2048x2048 (22.4 MB GPU). Halving to 1024px cuts it to a quarter.",
+            "estimatedSavings": "~16.8 MB GPU"
+          },
+          {
+            "kind": "oversized_texture",
+            "severity": "medium",
+            "target": "2048x2048 texture",
+            "detail": "Texture is 2048x2048 (22.4 MB GPU). Halving to 1024px cuts it to a quarter.",
+            "estimatedSavings": "~16.8 MB GPU"
+          },
+          {
+            "kind": "missing_texture_compression",
+            "severity": "medium",
+            "target": "scene textures",
+            "detail": "5 textures with no KTX2/BasisU supercompression.",
+            "estimatedSavings": "~70-90% texture bytes with KTX2"
+          },
+          {
+            "kind": "missing_geometry_compression",
+            "severity": "low",
+            "target": "scene geometry",
+            "detail": "15,452 triangles with no Draco or meshopt compression.",
+            "estimatedSavings": "~30-50% geometry bytes with Draco"
+          }
+        ]
+      }
+    },
+    "CesiumMilkTruck": {
+      "model_id": "CesiumMilkTruck",
+      "name": "Cesium Milk Truck",
+      "fileSizeBytes": 369980,
+      "counts": {
+        "nodes": 6,
+        "meshes": 2,
+        "materials": 4,
+        "textures": 1,
+        "animations": 1
+      },
+      "totals": {
+        "vertices": 3995,
+        "triangles": 2856
+      },
+      "extensionsUsed": [],
+      "nodes": [
+        {
+          "id": "Cesium_Milk_Truck",
+          "name": "Cesium_Milk_Truck",
+          "type": "mesh",
+          "triangles": 2088,
+          "vertices": 3167,
+          "bboxMin": [
+            -1.3959999444484694,
+            0.0014518341839775961,
+            -2.4309100625061864
+          ],
+          "bboxMax": [
+            1.3959999444484694,
+            2.5843698066461185,
+            2.437999853355886
+          ]
+        },
+        {
+          "id": "Wheels",
+          "name": "Wheels",
+          "type": "mesh",
+          "triangles": 768,
+          "vertices": 828,
+          "bboxMin": [
+            -1.0579999054670353,
+            0.0014518341839775961,
+            1.0063997411237933
+          ],
+          "bboxMax": [
+            1.0579999054670353,
+            0.8539921289000056,
+            1.858940031530741
+          ]
+        },
+        {
+          "id": "Wheels.001",
+          "name": "Wheels.001",
+          "type": "mesh",
+          "triangles": 768,
+          "vertices": 828,
+          "bboxMin": [
+            -1.0579999054670353,
+            0.0014518341839775961,
+            -1.778600059498672
+          ],
+          "bboxMax": [
+            1.0579999054670353,
+            0.8539921289000056,
+            -0.9260597690917243
+          ]
+        },
+        {
+          "id": "Node",
+          "name": "Node",
+          "type": "empty",
+          "triangles": 0,
+          "vertices": 0,
+          "bboxMin": [
+            -1.0579999054670353,
+            0.0014518341839775961,
+            1.0063997411237933
+          ],
+          "bboxMax": [
+            1.0579999054670353,
+            0.8539921289000056,
+            1.858940031530741
+          ]
+        },
+        {
+          "id": "Node.001",
+          "name": "Node.001",
+          "type": "empty",
+          "triangles": 0,
+          "vertices": 0,
+          "bboxMin": [
+            -1.0579999054670353,
+            0.0014518341839775961,
+            -1.778600059498672
+          ],
+          "bboxMax": [
+            1.0579999054670353,
+            0.8539921289000056,
+            -0.9260597690917243
+          ]
+        },
+        {
+          "id": "Yup2Zup",
+          "name": "Yup2Zup",
+          "type": "empty",
+          "triangles": 0,
+          "vertices": 0,
+          "bboxMin": [
+            -1.3959999444484694,
+            0.0014518341839775961,
+            -2.4309100625061864
+          ],
+          "bboxMax": [
+            1.3959999444484694,
+            2.5843698066461185,
+            2.437999853355886
+          ]
+        }
+      ],
+      "largestNode": {
+        "id": "Cesium_Milk_Truck",
+        "triangles": 2088
+      },
+      "sceneStats": {
+        "scope": "scene",
+        "totals": {
+          "vertices": 3995,
+          "triangles": 2856,
+          "drawCallEstimate": 4,
+          "materials": 4,
+          "textures": 1
+        },
+        "meshes": [
+          {
+            "id": "mesh-0",
+            "name": "Wheels",
+            "vertices": 828,
+            "triangles": 768,
+            "sizeBytes": 31104,
+            "instances": 2
+          },
+          {
+            "id": "mesh-1",
+            "name": "Cesium_Milk_Truck",
+            "vertices": 3167,
+            "triangles": 2088,
+            "sizeBytes": 113872,
+            "instances": 1
+          }
+        ],
+        "textures": [
+          {
+            "name": "CesiumMilkTruck.jpg",
+            "resolution": "2048x2048",
+            "mimeType": "image/jpeg",
+            "sizeBytes": 218979,
+            "gpuSizeBytes": 22369620
+          }
+        ]
+      },
+      "optimizations": {
+        "totals": {
+          "triangles": 2856,
+          "textureGpuBytes": 22369620
+        },
+        "budget": {
+          "triangles": null,
+          "textureMb": null
+        },
+        "overBudget": {
+          "triangles": false,
+          "texture": false
+        },
+        "findings": [
+          {
+            "kind": "oversized_texture",
+            "severity": "medium",
+            "target": "CesiumMilkTruck.jpg",
+            "detail": "Texture is 2048x2048 (22.4 MB GPU). Halving to 1024px cuts it to a quarter.",
+            "estimatedSavings": "~16.8 MB GPU"
+          },
+          {
+            "kind": "missing_texture_compression",
+            "severity": "medium",
+            "target": "scene textures",
+            "detail": "1 textures with no KTX2/BasisU supercompression.",
+            "estimatedSavings": "~70-90% texture bytes with KTX2"
+          },
+          {
+            "kind": "duplicate_materials",
+            "severity": "low",
+            "target": "materials",
+            "detail": "1 group(s) of identical materials; 1 could be merged.",
+            "estimatedSavings": "~1 redundant material(s)"
+          }
+        ]
+      }
+    },
+    "Box": {
+      "model_id": "Box",
+      "name": "Box",
+      "fileSizeBytes": 1664,
+      "counts": {
+        "nodes": 2,
+        "meshes": 1,
+        "materials": 1,
+        "textures": 0,
+        "animations": 0
+      },
+      "totals": {
+        "vertices": 24,
+        "triangles": 12
+      },
+      "extensionsUsed": [],
+      "nodes": [
+        {
+          "id": "node-1",
+          "name": "",
+          "type": "mesh",
+          "triangles": 12,
+          "vertices": 24,
+          "bboxMin": [
+            -0.5,
+            -0.5000000000000001,
+            -0.5000000000000001
+          ],
+          "bboxMax": [
+            0.5,
+            0.5000000000000001,
+            0.5000000000000001
+          ]
+        },
+        {
+          "id": "node-0",
+          "name": "",
+          "type": "empty",
+          "triangles": 0,
+          "vertices": 0,
+          "bboxMin": [
+            -0.5,
+            -0.5000000000000001,
+            -0.5000000000000001
+          ],
+          "bboxMax": [
+            0.5,
+            0.5000000000000001,
+            0.5000000000000001
+          ]
+        }
+      ],
+      "largestNode": {
+        "id": "node-1",
+        "triangles": 12
+      },
+      "sceneStats": {
+        "scope": "scene",
+        "totals": {
+          "vertices": 24,
+          "triangles": 12,
+          "drawCallEstimate": 1,
+          "materials": 1,
+          "textures": 0
+        },
+        "meshes": [
+          {
+            "id": "mesh-0",
+            "name": "Mesh",
+            "vertices": 24,
+            "triangles": 12,
+            "sizeBytes": 648,
+            "instances": 1
+          }
+        ],
+        "textures": []
+      },
+      "optimizations": {
+        "totals": {
+          "triangles": 12,
+          "textureGpuBytes": 0
+        },
+        "budget": {
+          "triangles": null,
+          "textureMb": null
+        },
+        "overBudget": {
+          "triangles": false,
+          "texture": false
+        },
+        "findings": []
+      }
+    }
+  }
+}

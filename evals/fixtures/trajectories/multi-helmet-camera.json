@@ -1,0 +1,72 @@
+{
+  "task_id": "multi-helmet-camera",
+  "prompt": "Zoom the camera in on the helmet.",
+  "model_id": "DamagedHelmet",
+  "tools": [
+    {
+      "name": "mcp__modelsense__load_model",
+      "input": {
+        "model_id": "DamagedHelmet"
+      },
+      "output": {
+        "session_id": "seed-DamagedHelmet",
+        "model_id": "DamagedHelmet",
+        "name": "Damaged Helmet",
+        "counts": {
+          "nodes": 1,
+          "meshes": 1,
+          "materials": 1,
+          "textures": 5,
+          "animations": 0
+        },
+        "totals": {
+          "vertices": 14556,
+          "triangles": 15452
+        },
+        "extensionsUsed": [],
+        "fileSizeBytes": 3773916
+      },
+      "is_error": false
+    },
+    {
+      "name": "mcp__modelsense__camera_focus",
+      "input": {
+        "session_id": "s",
+        "node_id": "node_damagedHelmet_-6514"
+      },
+      "output": {
+        "type": "camera_focus",
+        "nodeId": "node_damagedHelmet_-6514",
+        "center": [
+          -0.0024815797805786133,
+          1.051233508486682e-05,
+          -0.18715500186327721
+        ],
+        "radius": 1.6445
+      },
+      "is_error": false
+    }
+  ],
+  "scene_commands": [
+    {
+      "type": "camera_focus",
+      "nodeId": "node_damagedHelmet_-6514",
+      "center": [
+        -0.0024815797805786133,
+        1.051233508486682e-05,
+        -0.18715500186327721
+      ],
+      "radius": 1.6445
+    }
+  ],
+  "approvals": [],
+  "final_text": "Framed the camera on the helmet.",
+  "usage": {
+    "turns": 3,
+    "cost_usd": 0.12,
+    "duration_ms": 8000,
+    "input_tokens": 4500,
+    "output_tokens": 360
+  },
+  "error": null
+}

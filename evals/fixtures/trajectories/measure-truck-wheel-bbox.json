@@ -1,0 +1,88 @@
+{
+  "task_id": "measure-truck-wheel-bbox",
+  "prompt": "Measure the bounding box of a wheel.",
+  "model_id": "CesiumMilkTruck",
+  "tools": [
+    {
+      "name": "mcp__modelsense__load_model",
+      "input": {
+        "model_id": "CesiumMilkTruck"
+      },
+      "output": {
+        "session_id": "seed-CesiumMilkTruck",
+        "model_id": "CesiumMilkTruck",
+        "name": "Cesium Milk Truck",
+        "counts": {
+          "nodes": 6,
+          "meshes": 2,
+          "materials": 4,
+          "textures": 1,
+          "animations": 1
+        },
+        "totals": {
+          "vertices": 3995,
+          "triangles": 2856
+        },
+        "extensionsUsed": [],
+        "fileSizeBytes": 369980
+      },
+      "is_error": false
+    },
+    {
+      "name": "mcp__modelsense__measure",
+      "input": {
+        "session_id": "s",
+        "node_id": "Wheels"
+      },
+      "output": {
+        "type": "measurement",
+        "label": "bbox of Wheels",
+        "points": [
+          [
+            -1.0579999054670353,
+            0.0014518341839775961,
+            1.0063997411237933
+          ],
+          [
+            1.0579999054670353,
+            0.8539921289000056,
+            1.858940031530741
+          ]
+        ],
+        "value": 2.435,
+        "unit": "scene-units"
+      },
+      "is_error": false
+    }
+  ],
+  "scene_commands": [
+    {
+      "type": "measurement",
+      "label": "bbox of Wheels",
+      "points": [
+        [
+          -1.0579999054670353,
+          0.0014518341839775961,
+          1.0063997411237933
+        ],
+        [
+          1.0579999054670353,
+          0.8539921289000056,
+          1.858940031530741
+        ]
+      ],
+      "value": 2.435,
+      "unit": "scene-units"
+    }
+  ],
+  "approvals": [],
+  "final_text": "The wheel bounding box has a diagonal of about 2.435 scene units.",
+  "usage": {
+    "turns": 4,
+    "cost_usd": 0.16,
+    "duration_ms": 9500,
+    "input_tokens": 6000,
+    "output_tokens": 480
+  },
+  "error": null
+}
