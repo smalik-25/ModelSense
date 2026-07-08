@@ -71,8 +71,16 @@ def collect_refs(task: GoldenTask) -> list[str]:
     return refs
 
 
+def _node_ids(reference: Reference, model_id: str) -> set[str]:
+    return {n["id"] for n in reference.model(model_id).get("nodes", [])}
+
+
 def verify_golden(tasks: list[GoldenTask], reference: Reference) -> list[str]:
-    """Return a list of problems: unresolved refs or unknown model ids. Empty = ok."""
+    """Return a list of problems: unresolved refs, unknown model ids, or node-id
+    references (assertion node / node_b / resolved node_ref) that do not name a real
+    node in reference.json. Empty = ok. This is the drift guard, so it must cover
+    literal node ids (which can contain dots and so are never dotted refs), not just
+    dotted refs."""
     problems: list[str] = []
     for task in tasks:
         if task.model_id not in reference.model_ids:
@@ -83,4 +91,22 @@ def verify_golden(tasks: list[GoldenTask], reference: Reference) -> list[str]:
                 reference.resolve(ref)
             except ReferenceError as exc:
                 problems.append(f"{task.id}: {exc}")
+
+        node_ids = _node_ids(reference, task.model_id)
+        for a in task.assertions:
+            for field in ("node", "node_b"):
+                val = getattr(a, field)
+                if val is not None and val not in node_ids:
+                    problems.append(
+                        f"{task.id}: assertion {a.kind} {field}={val!r} is not a node in {task.model_id}"
+                    )
+            if a.node_ref:
+                try:
+                    resolved = reference.resolve(a.node_ref)
+                    if resolved not in node_ids:
+                        problems.append(
+                            f"{task.id}: node_ref {a.node_ref} -> {resolved!r} is not a node in {task.model_id}"
+                        )
+                except ReferenceError:
+                    pass  # unresolved ref already reported above
     return problems

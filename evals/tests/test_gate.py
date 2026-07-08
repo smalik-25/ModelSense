@@ -53,3 +53,36 @@ def test_gate_fails_when_threshold_raised(tmp_path: Path):
     result = run_gate(fixtures_dir=fixtures_dir, baseline_path=baseline)
     assert not result.ok
     assert abs(result.completion_rate - 0.5) < 1e-9
+
+
+def test_gate_fails_when_a_category_has_no_fixtures(tmp_path: Path):
+    # A category with a floor but zero recorded tasks is a coverage regression.
+    good = {
+        "task_id": "lookup-helmet-triangles",
+        "model_id": "DamagedHelmet",
+        "tools": [
+            {
+                "name": "mcp__modelsense__load_model",
+                "input": {"model_id": "DamagedHelmet"},
+                "output": {"totals": {"triangles": 15452, "vertices": 14556}, "counts": {}},
+                "is_error": False,
+            }
+        ],
+        "scene_commands": [],
+        "approvals": [],
+        "final_text": "15,452 triangles.",
+        "usage": {"turns": 3, "cost_usd": 0.1, "duration_ms": 8000},
+        "error": None,
+    }
+    fixtures_dir = tmp_path / "trajectories"
+    fixtures_dir.mkdir()
+    (fixtures_dir / "good.json").write_text(json.dumps(good))
+    baseline = tmp_path / "baseline.json"
+    baseline.write_text(
+        json.dumps(
+            {"min_completion_rate": 0.5, "min_by_category": {"measurement": 0.85}}
+        )
+    )
+    result = run_gate(fixtures_dir=fixtures_dir, baseline_path=baseline)
+    assert not result.ok
+    assert "measurement" in result.report

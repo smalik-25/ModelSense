@@ -65,8 +65,11 @@ def run_gate(
     for cat, floor in baseline.get("min_by_category", {}).items():
         vals = by_cat.get(cat, [])
         cat_rate = sum(vals) / len(vals) if vals else 0.0
-        lines.append(f"  {cat}: {cat_rate * 100:.0f}% (floor {floor * 100:.0f}%)")
-        if vals and cat_rate < floor:
+        lines.append(f"  {cat}: {cat_rate * 100:.0f}% ({len(vals)} tasks, floor {floor * 100:.0f}%)")
+        if not vals:
+            # A category with a floor but no recorded tasks is a coverage regression.
+            failures.append(f"{cat} has no recorded tasks (floor {floor * 100:.0f}%)")
+        elif cat_rate < floor:
             failures.append(f"{cat} {cat_rate * 100:.0f}% < floor {floor * 100:.0f}%")
 
     # Guardrail compliance is a hard safety floor.

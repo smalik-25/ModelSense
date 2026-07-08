@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter
 
 from modelsense_evals.loader import load_tasks, verify_golden
+from modelsense_evals.models import GoldenTask
 from modelsense_evals.reference import Reference
 
 EXPECTED_COUNTS = {
@@ -34,3 +35,21 @@ def test_task_ids_unique():
 def test_every_reference_resolves():
     problems = verify_golden(load_tasks(), Reference.load())
     assert problems == [], problems
+
+
+def test_verify_golden_flags_unknown_node_id():
+    ref = Reference.load()
+    bad = GoldenTask(
+        id="bad-node",
+        category="measurement",
+        difficulty="easy",
+        prompt="measure it",
+        model_id="CesiumMilkTruck",
+        assertions=[{"kind": "measurement_value", "node": "NotAWheel"}],
+    )
+    problems = verify_golden([bad], ref)
+    assert any("NotAWheel" in p for p in problems), problems
+
+    good = bad.model_copy(update={"id": "good-node"})
+    good.assertions[0].node = "Wheels"
+    assert verify_golden([good], ref) == []
