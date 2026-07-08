@@ -100,4 +100,37 @@ describe('domain (against committed GLB fixtures)', () => {
     expect(cmd.exclusive).toBe(true);
     expect(() => domain.buildHighlight(truck, ['nope-1', 'nope-2'])).toThrow();
   });
+
+  it('camera_focus: returns a bounding sphere for a node', () => {
+    const cmd = domain.cameraFocus(truck, 'Wheels');
+    expect(cmd.type).toBe('camera_focus');
+    expect(cmd.nodeId).toBe('Wheels');
+    expect(cmd.center).toHaveLength(3);
+    expect(cmd.radius).toBeGreaterThan(0);
+    expect(() => domain.cameraFocus(truck, 'nope')).toThrow();
+  });
+
+  it('measure: bounding box mode and distance mode', () => {
+    const bbox = domain.measure(truck, { node_id: 'Wheels' });
+    expect(bbox.type).toBe('measurement');
+    expect(bbox.points).toHaveLength(2);
+    expect(bbox.value).toBeGreaterThan(0);
+    expect(bbox.unit).toBe('scene-units');
+
+    const dist = domain.measure(truck, { node_a: 'Wheels', node_b: 'Wheels.001' });
+    expect(dist.points).toHaveLength(2);
+    expect(dist.value).toBeGreaterThan(0);
+
+    expect(() => domain.measure(truck, {})).toThrow();
+    expect(() => domain.measure(truck, { node_id: 'nope' })).toThrow();
+  });
+
+  it('export_report: produces markdown with summary and mesh table', () => {
+    const report = domain.exportReport(helmet, 'Damaged Helmet', '2026-07-07T00:00:00.000Z');
+    expect(report.format).toBe('markdown');
+    expect(report.generatedAt).toBe('2026-07-07T00:00:00.000Z');
+    expect(report.markdown).toContain('# ModelSense report: Damaged Helmet');
+    expect(report.markdown).toContain('Heaviest meshes');
+    expect(report.markdown).toContain('15452');
+  });
 });

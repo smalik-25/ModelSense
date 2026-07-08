@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { HighlightCommand } from './structured-content';
+import { CameraFocusCommand, HighlightCommand, MeasurementCommand } from './structured-content';
 
 /**
  * Zod schemas for every MCP tool's input and output. The server registers tools
@@ -126,3 +126,33 @@ export const highlightElementsInput = {
 // The output IS the scene command the viewer applies.
 export const highlightElementsOutput = HighlightCommand;
 export type HighlightElementsOutput = z.infer<typeof HighlightCommand>;
+
+// --- camera_focus ----------------------------------------------------------
+export const cameraFocusInput = {
+  session_id: z.string(),
+  node_id: z.string().describe('Node id to frame the camera on.'),
+};
+export const cameraFocusOutput = CameraFocusCommand;
+export type CameraFocusOutput = z.infer<typeof CameraFocusCommand>;
+
+// --- measure ---------------------------------------------------------------
+export const measureInput = {
+  session_id: z.string(),
+  node_id: z.string().optional().describe('Measure this node bounding box.'),
+  node_a: z.string().optional().describe('First node id for a distance measurement.'),
+  node_b: z.string().optional().describe('Second node id for a distance measurement.'),
+};
+export const measureOutput = MeasurementCommand;
+export type MeasureOutput = z.infer<typeof MeasurementCommand>;
+
+// --- export_report (gated at the agent layer via canUseTool) ---------------
+export const exportReportInput = {
+  session_id: z.string(),
+  format: z.literal('markdown').default('markdown'),
+};
+export const exportReportOutput = z.object({
+  format: z.literal('markdown'),
+  markdown: z.string(),
+  generatedAt: z.string(),
+});
+export type ExportReportOutput = z.infer<typeof exportReportOutput>;

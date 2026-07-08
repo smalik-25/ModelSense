@@ -9,8 +9,8 @@ services:
     plan: free
     region: oregon
     rootDir: .
-    buildCommand: corepack enable && corepack prepare pnpm@10.15.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @modelsense/server... run build
-    startCommand: pnpm --filter @modelsense/server start
+    buildCommand: corepack enable && corepack prepare pnpm@10.15.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @modelsense/agent... run build
+    startCommand: pnpm --filter @modelsense/agent start
     healthCheckPath: /healthz
     buildFilter:
       paths:
@@ -30,4 +30,10 @@ services:
       - key: LANGFUSE_BASE_URL
         sync: false
       - key: MCP_API_KEY
+        sync: false
+      # Optional: the Vercel web origin for CORS (defaults to * if unset).
+      - key: WEB_ORIGIN
+        sync: false
+      # Optional: enables the clickable Langfuse trace deep link in the UI.
+      - key: LANGFUSE_PROJECT_ID
         sync: false

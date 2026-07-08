@@ -2,6 +2,51 @@
 
 Running log of what changed and why. Newest first.
 
+## 2026-07-07 - Phase 2: agent loop + human-in-the-loop + Langfuse tracing
+
+Agent service (`apps/agent`):
+- Claude Agent SDK (`@anthropic-ai/claude-agent-sdk` 0.3.204) `query()` loop over
+  the remote MCP server (Streamable HTTP + bearer). Model `claude-sonnet-5`,
+  `maxTurns` capped, `alwaysLoad` on the MCP config so tools skip the ToolSearch
+  preamble.
+- `POST /chat` streams SSE: assistant text, tool call/result, scene commands
+  (highlight / camera / measurement parsed from tool results), approval requests,
+  and a done event with turns/cost/latency/tokens.
+- Human-in-the-loop: the seven read tools are allowlisted (auto-approved);
+  `export_report` is gated through `canUseTool`, which emits an approval event and
+  blocks on `POST /chat/approve`. Built-in tools are denied.
+- Langfuse tracing (OTEL v5): one trace per turn with a child span per tool call
+  plus cost/token metadata; deep link emitted when `LANGFUSE_PROJECT_ID` is set.
+
+Server: added `camera_focus`, `measure`, `export_report` (gated) tools (8 total)
+with shared Zod schemas and unit tests.
+
+Web (`apps/web`): chat panel wired to `/chat` over a fetch SSE stream. Applies scene
+commands to the R3F canvas live (emissive highlight, camera framing, measurement
+line + label), shows an approve/reject card for gated actions, and a trace strip
+(turns, latency, cost, tokens, Langfuse link).
+
+Combined prod entry (`apps/agent/src/combined.ts`): mounts the MCP server and agent
+routes on one Express app / one port for Render free tier; the agent reaches the MCP
+server on localhost. `render.yaml` now builds and starts the combined agent.
+
+Verified live (local):
+- Demo sentence "find every node with 'wheel' and highlight the largest" produces
+  the correct trajectory (`load_model` -> `find_elements` -> `highlight_elements`),
+  emits the highlight scene command, and completes in ~4 turns. `alwaysLoad` cut
+  this from 8 turns / $0.56 / 42s to 4 turns / $0.28 / 11s.
+- A stats + highlight turn: 5 turns / $0.14 / 10s.
+- Langfuse: "tracing enabled", trace flushed with no errors.
+- typecheck (all four packages), lint, and web build green; 27 unit tests pass.
+
+Cost note: an agent turn costs ~$0.14 to $0.28 (Claude Code wrapper context overhead
+across turns dominates raw tokens). Flagged for Phase 3: roughly $14 per 50-task
+eval run; will reduce with prompt caching and fewer turns before the first full run.
+
+Not yet re-verified locally (dev machine too loaded to spawn more live turns): the
+HITL approval round-trip end to end and the combined build run. The code typechecks
+and lints; both are local-only checks (CI never runs live turns).
+
 ## 2026-07-07 - Phase 1: MCP server MVP + viewer MVP
 
 Server (`apps/server`):

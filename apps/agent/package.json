@@ -1,28 +1,26 @@
 {
-  "name": "@modelsense/server",
+  "name": "@modelsense/agent",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "main": "dist/index.js",
-  "exports": {
-    ".": "./src/index.ts",
-    "./app": "./src/http.ts"
-  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsup",
-    "start": "node dist/index.js",
+    "start": "node dist/combined.js",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@gltf-transform/core": "^4.4.1",
-    "@gltf-transform/extensions": "^4.4.1",
-    "@gltf-transform/functions": "^4.4.1",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.204",
+    "@anthropic-ai/sdk": "^0.110.0",
+    "@langfuse/otel": "^5.9.1",
+    "@langfuse/tracing": "^5.9.1",
     "@modelcontextprotocol/sdk": "1.29.0",
+    "@modelsense/server": "workspace:*",
     "@modelsense/shared": "workspace:*",
+    "@opentelemetry/sdk-node": "^0.220.0",
     "express": "^4.21.2",
-    "lru-cache": "^11.1.0",
     "pino": "^9.5.0",
     "zod": "^4.0.0"
   },

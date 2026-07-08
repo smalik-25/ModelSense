@@ -58,11 +58,14 @@ describe('MCP server over HTTP', () => {
       try {
         const { tools } = await client.listTools();
         expect(tools.map((t) => t.name).sort()).toEqual([
+          'camera_focus',
+          'export_report',
           'find_elements',
           'get_scene_stats',
           'highlight_elements',
           'list_models',
           'load_model',
+          'measure',
         ]);
       } finally {
         await transport.close();

@@ -136,3 +136,137 @@ pre.cmd {
   overflow-x: auto;
   color: var(--muted);
 }
+
+/* Layout: let the chat own the scroll area */
+.side-pane {
+  overflow: hidden;
+}
+.side-pane header {
+  flex: 0 0 auto;
+}
+.field.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.field.inline select {
+  flex: 1;
+}
+
+/* Chat */
+.chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+.examples {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.example {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 400;
+  text-align: left;
+}
+.msg {
+  padding: 9px 11px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  max-width: 92%;
+  white-space: pre-wrap;
+}
+.msg.user {
+  align-self: flex-end;
+  background: #1d2431;
+}
+.msg.assistant {
+  align-self: flex-start;
+  background: #12151c;
+  border: 1px solid var(--border);
+}
+.dots {
+  color: var(--muted);
+}
+.tools-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tool-chip {
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.approval {
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px;
+  background: #1a1600;
+}
+.approval-title {
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.approval .row {
+  margin-top: 10px;
+}
+.error {
+  color: #ff6b6b;
+  font-size: 12px;
+}
+.trace {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.trace a {
+  color: var(--accent);
+}
+.composer {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex: 0 0 auto;
+}
+.composer input {
+  flex: 1;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 13px;
+}
+.measure-label {
+  background: #12151c;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+}

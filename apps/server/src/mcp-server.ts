@@ -129,5 +129,62 @@ export function createMcpServer(): McpServer {
     },
   );
 
+  server.registerTool(
+    'camera_focus',
+    {
+      title: 'Camera focus',
+      description: 'Return a camera command that frames the given node. The viewer tweens to it.',
+      inputSchema: schema.cameraFocusInput,
+      outputSchema: schema.cameraFocusOutput,
+    },
+    ({ session_id, node_id }) => {
+      try {
+        const { doc } = getSession(session_id);
+        return ok(domain.cameraFocus(doc, node_id));
+      } catch (err) {
+        return toFail(err, 'camera_focus');
+      }
+    },
+  );
+
+  server.registerTool(
+    'measure',
+    {
+      title: 'Measure',
+      description:
+        'Measure a node bounding box (node_id) or the distance between two nodes (node_a and node_b). Values are in glTF scene units.',
+      inputSchema: schema.measureInput,
+      outputSchema: schema.measureOutput,
+    },
+    ({ session_id, node_id, node_a, node_b }) => {
+      try {
+        const { doc } = getSession(session_id);
+        return ok(domain.measure(doc, { node_id, node_a, node_b }));
+      } catch (err) {
+        return toFail(err, 'measure');
+      }
+    },
+  );
+
+  server.registerTool(
+    'export_report',
+    {
+      title: 'Export report',
+      description:
+        'Generate a Markdown report of the scene (summary, heaviest meshes, textures). Gated: the agent must get human approval before calling it.',
+      inputSchema: schema.exportReportInput,
+      outputSchema: schema.exportReportOutput,
+      annotations: { readOnlyHint: false },
+    },
+    ({ session_id }) => {
+      try {
+        const { doc, name } = getSession(session_id);
+        return ok(domain.exportReport(doc, name, new Date().toISOString()));
+      } catch (err) {
+        return toFail(err, 'export_report');
+      }
+    },
+  );
+
   return server;
 }

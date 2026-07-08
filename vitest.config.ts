@@ -5,6 +5,6 @@ import { defineConfig } from 'vitest/config';
 // Playwright (Phase 4), not Vitest, so it is intentionally excluded here.
 export default defineConfig({
   test: {
-    projects: ['packages/*', 'apps/server'],
+    projects: ['packages/*', 'apps/server', 'apps/agent'],
   },
 });
