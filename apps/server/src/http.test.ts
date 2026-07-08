@@ -52,7 +52,7 @@ describe('MCP server over HTTP', () => {
   );
 
   it(
-    'lists all five tools',
+    'lists all nine tools',
     async () => {
       const { client, transport } = await connect();
       try {
@@ -66,6 +66,7 @@ describe('MCP server over HTTP', () => {
           'list_models',
           'load_model',
           'measure',
+          'suggest_optimizations',
         ]);
       } finally {
         await transport.close();
