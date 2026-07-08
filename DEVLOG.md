@@ -2,6 +2,51 @@
 
 Running log of what changed and why. Newest first.
 
+## 2026-07-08 - Phase 4: e2e tests, MCP conformance, and polish
+
+Playwright e2e for the web app (`apps/web/tests/e2e/handwritten/`): the viewer
+loads with a model selector and canvas, a chat turn streams an assistant reply and
+surfaces the trace strip, and the human-in-the-loop approval card approves and
+rejects. The agent is mocked at the network layer (`lib/mockAgent.ts` fulfills the
+`/chat` SSE and `/chat/approve` with CORS headers), so the suite is deterministic
+and never calls a live API. Added `data-testid`s to the chat UI for stable
+locators, a Playwright config (built app via `vite preview`, software WebGL for the
+R3F canvas in headless), and a CI `e2e` job.
+
+Agent-generated tests: `apps/web/tests/e2e/generated/` plus `AGENTS.md` document the
+handwritten-vs-generated split and provenance rules (every generated spec carries a
+`// generated:`/`// seed:` header, reviewed before commit). The live
+planner/generator/healer loop (`npx playwright init-agents --loop=claude`) runs
+locally, not in CI; CI only runs committed specs. `docs/e2e-benchmark.md` is the
+comparison framework (coverage, flakiness, maintenance cost) to fill from the local
+loop.
+
+MCP conformance: `scripts/mcp-conformance.mjs` starts the built server and drives
+the official MCP Inspector CLI (`@modelcontextprotocol/inspector` 0.22.0) over
+Streamable HTTP - `tools/list` must return exactly the nine tools, and a
+`tools/call load_model` must return a session and stats. Wired as a CI
+`conformance` job. The server has no live-LLM dependency, so it runs offline. This
+is on top of the existing in-process SDK-client conformance test in
+`apps/server/src/http.test.ts`.
+
+CI now has four jobs: `build` (lint + typecheck + unit), `eval-gate`,
+`conformance`, and `e2e` - all offline.
+
+Harness audit: an adversarial review of the scorers/runner/gate surfaced three
+correctness bugs, each verified and fixed with a regression test: (1) refusal
+detection missed natural-language declines ("not possible", "read-only",
+"isn't supported"), so a correct guardrail refusal could false-fail - broadened the
+marker set; (2) `verify_golden` never validated measurement `node`/`node_b` ids
+(only dotted refs), so a renamed node passed preflight then failed scoring - it now
+checks node ids against reference.json; (3) the CI gate skipped a per-category floor
+when that category had zero fixtures - a dropped category now fails the gate. None
+affected the committed fixtures; all could have produced wrong results on new data.
+Harness tests: 21.
+
+Phase 5 groundwork: `docs/auth.md` records the shared-bearer rationale and the
+staged upgrade path (scoped keys -> OAuth 2.1 resource server -> per-principal
+audit), satisfying the Phase 5 "documented scoped-key design."
+
 ## 2026-07-08 - Phase 3: evaluation harness + regression gate
 
 The differentiator. `evals/` is a Python 3.12 harness (uv) that scores the agent
@@ -53,14 +98,32 @@ reference.json, a correct run across all categories) so the gate has something t
 before a live baseline exists. `evals run --save-fixtures` replaces them with real
 recordings.
 
-Verified locally: 27 server unit tests (adds suggest_optimizations cases) green;
-all four TS packages typecheck; evals ruff clean, 15 pytest tests pass, gate 13/13 at
-100% with guardrail compliance 100%. The gate-fails-when-threshold-raised test proves
-the regression path (Phase 3 DoD).
+Verified locally: all TS unit tests green (30 across the four packages, incl. new
+suggest_optimizations cases; the MCP listTools conformance test now expects nine
+tools); all four packages typecheck; evals ruff clean, 15+ pytest tests pass, gate
+green with guardrail compliance 100%. The gate-fails-when-threshold-raised test
+proves the regression path (Phase 3 DoD).
 
-Cost note (unchanged from Phase 2 flag): a full 50-task live run is ~$14 at ~$0.28/task
-plus a few cents of Haiku judging. Not run yet; `evals run` prints an estimate and
-refuses to spend without `--yes`. Flagged for approval before the first baseline run.
+Baseline run (50 tasks, `claude-sonnet-5`, Haiku judge). First attempt against the
+Render free tier died: tasks 1-5 ran, then the process 502'd from task 6 on - the
+combined Agent-SDK process OOMs under ~half a dozen sustained turns on the 512 MB
+free instance (PROJECT_PLAN risk #1). Re-ran against a local combined server, which
+completed cleanly. Decision: eval runs go against a local or paid instance, not the
+free tier; documented here and in the runner (`--agent-url`).
+
+Results (report in evals/reports/, gate fixtures in evals/fixtures/):
+- Baseline: 94.0% completion, 97% tool selection, 100% arg validity, context
+  fidelity 4.48/5, guardrail compliance 100%, mean cost $0.113/task, $5.66 total.
+  Per category: lookup/multi_step/optimization/guardrail 100%, measurement 62%.
+- The three measurement misses were the same shortcut: the agent read the bbox from
+  find_elements and narrated the size without calling measure, so no overlay drew.
+- Improvement iteration (evals/reports/improvement.md): one system-prompt edit to
+  always use measure for size/distance questions. Measurement 62% -> 100%, overall
+  94% -> 100%. baseline.json floors raised to lock it in.
+
+Cost: the full run is ~$5.7 at ~$0.11/task plus a few cents of Haiku judging (well
+under the earlier ~$14 estimate; the Phase 2 per-turn figure was inflated by wrapper
+overhead). `evals run` prints an estimate and refuses to spend without `--yes`.
 
 ## 2026-07-07 - Phase 2: agent loop + human-in-the-loop + Langfuse tracing
 

@@ -61,3 +61,39 @@ jobs:
       - name: Regression gate
         working-directory: evals
         run: uv run evals gate
+
+  # MCP protocol conformance via the official Inspector CLI against the built
+  # server. The server has no live-LLM dependency, so this is offline.
+  conformance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build server
+        run: pnpm --filter @modelsense/server... run build
+      - name: MCP Inspector conformance
+        env:
+          MCP_API_KEY: conformance-ci-key
+        run: node scripts/mcp-conformance.mjs
+
+  # Playwright e2e for the web app. The agent is mocked at the network layer, so
+  # these are deterministic and never call a live API.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browser
+        run: pnpm --filter @modelsense/web exec playwright install --with-deps chromium
+      - name: e2e
+        run: pnpm --filter @modelsense/web run test:e2e

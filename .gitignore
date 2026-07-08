@@ -35,8 +35,9 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 
-# --- Eval run artifacts (local runs; committed reports live in evals/reports/) ---
-evals/results/*.parquet
+# --- Eval run artifacts (local runs; committed reports live in evals/reports/,
+#     committed CI fixtures in evals/fixtures/) ---
+evals/results/
 evals/.cache/
 
 # --- Large fetched assets (small GLBs are committed; large ones fetched by script) ---
