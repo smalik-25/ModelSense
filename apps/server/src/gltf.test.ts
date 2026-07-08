@@ -125,6 +125,34 @@ describe('domain (against committed GLB fixtures)', () => {
     expect(() => domain.measure(truck, { node_id: 'nope' })).toThrow();
   });
 
+  it('suggest_optimizations: flags oversized textures and missing compression on the helmet', () => {
+    const out = domain.suggestOptimizations(helmet);
+    expect(out.totals.triangles).toBe(15452);
+    expect(out.totals.textureGpuBytes).toBeGreaterThan(0);
+    const kinds = out.findings.map((f) => f.kind);
+    expect(kinds).toContain('oversized_texture');
+    expect(kinds).toContain('missing_texture_compression');
+    expect(kinds).toContain('missing_geometry_compression');
+    // Sorted worst-first: severity rank is non-decreasing.
+    const rank = { high: 0, medium: 1, low: 2 } as const;
+    for (let i = 1; i < out.findings.length; i++) {
+      expect(rank[out.findings[i]!.severity]).toBeGreaterThanOrEqual(rank[out.findings[i - 1]!.severity]);
+    }
+  });
+
+  it('suggest_optimizations: a triangle budget marks the scene over budget and flags the dense mesh', () => {
+    const out = domain.suggestOptimizations(helmet, 5000);
+    expect(out.budget.triangles).toBe(5000);
+    expect(out.overBudget.triangles).toBe(true);
+    expect(out.findings.some((f) => f.kind === 'dense_mesh')).toBe(true);
+  });
+
+  it('suggest_optimizations: a generous budget is not over budget', () => {
+    const out = domain.suggestOptimizations(helmet, 1_000_000, 1000);
+    expect(out.overBudget.triangles).toBe(false);
+    expect(out.overBudget.texture).toBe(false);
+  });
+
   it('export_report: produces markdown with summary and mesh table', () => {
     const report = domain.exportReport(helmet, 'Damaged Helmet', '2026-07-07T00:00:00.000Z');
     expect(report.format).toBe('markdown');

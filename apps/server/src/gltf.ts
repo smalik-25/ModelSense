@@ -11,6 +11,8 @@ import type {
   GetSceneStatsOutput,
   HighlightElementsOutput,
   MeasureOutput,
+  OptimizationFinding,
+  SuggestOptimizationsOutput,
 } from '@modelsense/shared';
 import { ToolError } from './tool-result';
 
@@ -277,6 +279,143 @@ export function measure(
   }
 
   throw new ToolError('Provide node_id (bounding box) or both node_a and node_b (distance).');
+}
+
+// --- suggest_optimizations -------------------------------------------------
+
+const GEOMETRY_COMPRESSION = ['KHR_draco_mesh_compression', 'EXT_meshopt_compression'];
+const TEXTURE_COMPRESSION = 'KHR_texture_basisu';
+const SEVERITY_ORDER: Record<OptimizationFinding['severity'], number> = { high: 0, medium: 1, low: 2 };
+
+/** Longer edge of a "WxH" resolution string, 0 if unparseable. */
+function maxTextureDim(resolution: string): number {
+  return resolution
+    .split('x')
+    .map((n) => Number.parseInt(n, 10))
+    .reduce((max, n) => (Number.isFinite(n) ? Math.max(max, n) : max), 0);
+}
+
+/** Name-independent signature of a material, so renamed-but-identical materials group. */
+function materialSignature(mat: import('@gltf-transform/core').Material): string {
+  const tex = (t: { getName(): string } | null): string | null => (t ? t.getName() || 'unnamed' : null);
+  const round = (v: readonly number[]): number[] => v.map((n) => Math.round(n * 1000) / 1000);
+  return JSON.stringify({
+    base: round(mat.getBaseColorFactor()),
+    metallic: Math.round(mat.getMetallicFactor() * 1000) / 1000,
+    roughness: Math.round(mat.getRoughnessFactor() * 1000) / 1000,
+    emissive: round(mat.getEmissiveFactor()),
+    alphaMode: mat.getAlphaMode(),
+    doubleSided: mat.getDoubleSided(),
+    baseTex: tex(mat.getBaseColorTexture()),
+    mrTex: tex(mat.getMetallicRoughnessTexture()),
+    normalTex: tex(mat.getNormalTexture()),
+    emissiveTex: tex(mat.getEmissiveTexture()),
+    occlusionTex: tex(mat.getOcclusionTexture()),
+  });
+}
+
+/**
+ * Deterministic optimization heuristics: oversized textures, dense meshes,
+ * missing Draco/KTX2 compression, and duplicate materials. The agent narrates;
+ * the numbers here are computed, not guessed. Findings are sorted worst-first.
+ */
+export function suggestOptimizations(
+  doc: Document,
+  budgetTriangles?: number,
+  budgetTextureMb?: number,
+): SuggestOptimizationsOutput {
+  const report = inspect(doc);
+  const root = doc.getRoot();
+  const extensions = new Set(root.listExtensionsUsed().map((e) => e.extensionName));
+  const findings: OptimizationFinding[] = [];
+
+  const totalTriangles = report.meshes.properties.reduce((a, m) => a + m.glPrimitives, 0);
+  const textureGpuBytes = report.textures.properties.reduce((a, t) => a + (t.gpuSize ?? t.size), 0);
+  const budgetTextureBytes = budgetTextureMb != null ? budgetTextureMb * 1_000_000 : null;
+  const overTriangles = budgetTriangles != null && totalTriangles > budgetTriangles;
+  const overTexture = budgetTextureBytes != null && textureGpuBytes > budgetTextureBytes;
+
+  // Oversized textures (>= 2048 on the long edge, or over an explicit texture budget).
+  for (const t of report.textures.properties) {
+    const dim = maxTextureDim(t.resolution);
+    const gpu = t.gpuSize ?? t.size;
+    if (dim >= 4096 || (dim >= 2048 && (overTexture || budgetTextureBytes == null))) {
+      findings.push({
+        kind: 'oversized_texture',
+        severity: dim >= 4096 ? 'high' : 'medium',
+        target: t.name || t.uri || `${t.resolution} texture`,
+        detail: `Texture is ${t.resolution} (${(gpu / 1_000_000).toFixed(1)} MB GPU). Halving to ${dim / 2}px cuts it to a quarter.`,
+        estimatedSavings: `~${((gpu * 0.75) / 1_000_000).toFixed(1)} MB GPU`,
+      });
+    }
+  }
+
+  // Dense meshes (absolute thresholds, or the densest offenders when over a triangle budget).
+  for (const m of report.meshes.properties) {
+    const overThreshold = m.glPrimitives >= 50_000;
+    const contributesToOverage = overTriangles && m.glPrimitives >= (budgetTriangles ?? 0) * 0.1;
+    if (overThreshold || contributesToOverage) {
+      findings.push({
+        kind: 'dense_mesh',
+        severity: m.glPrimitives >= 100_000 ? 'high' : 'medium',
+        target: m.name || 'mesh',
+        detail: `Mesh has ${m.glPrimitives.toLocaleString()} triangles${overTriangles ? ` against a ${budgetTriangles!.toLocaleString()} budget` : ''}.`,
+        estimatedSavings: null,
+      });
+    }
+  }
+
+  // Missing geometry compression on non-trivial geometry.
+  if (totalTriangles >= 10_000 && !GEOMETRY_COMPRESSION.some((e) => extensions.has(e))) {
+    findings.push({
+      kind: 'missing_geometry_compression',
+      severity: totalTriangles >= 100_000 ? 'high' : totalTriangles >= 50_000 ? 'medium' : 'low',
+      target: 'scene geometry',
+      detail: `${totalTriangles.toLocaleString()} triangles with no Draco or meshopt compression.`,
+      estimatedSavings: '~30-50% geometry bytes with Draco',
+    });
+  }
+
+  // Uncompressed textures where KTX2/BasisU would help.
+  const hasLargeUncompressed = report.textures.properties.some(
+    (t) => maxTextureDim(t.resolution) >= 1024 && t.mimeType !== 'image/ktx2',
+  );
+  if (hasLargeUncompressed && !extensions.has(TEXTURE_COMPRESSION)) {
+    findings.push({
+      kind: 'missing_texture_compression',
+      severity: overTexture ? 'high' : 'medium',
+      target: 'scene textures',
+      detail: `${report.textures.properties.length} textures with no KTX2/BasisU supercompression.`,
+      estimatedSavings: '~70-90% texture bytes with KTX2',
+    });
+  }
+
+  // Duplicate materials (identical properties, different objects).
+  const bySignature = new Map<string, number>();
+  for (const mat of root.listMaterials()) {
+    const sig = materialSignature(mat);
+    bySignature.set(sig, (bySignature.get(sig) ?? 0) + 1);
+  }
+  const duplicateGroups = [...bySignature.values()].filter((n) => n > 1);
+  if (duplicateGroups.length > 0) {
+    const redundant = duplicateGroups.reduce((a, n) => a + (n - 1), 0);
+    findings.push({
+      kind: 'duplicate_materials',
+      severity: 'low',
+      target: 'materials',
+      detail: `${duplicateGroups.length} group(s) of identical materials; ${redundant} could be merged.`,
+      estimatedSavings: `~${redundant} redundant material(s)`,
+    });
+  }
+
+  findings.sort((a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]);
+
+  return {
+    totals: { triangles: totalTriangles, textureGpuBytes },
+    budget: { triangles: budgetTriangles ?? null, textureMb: budgetTextureMb ?? null },
+    overBudget: { triangles: overTriangles, texture: overTexture },
+    findings,
+  };
 }
 
 export function exportReport(doc: Document, name: string, iso: string): ExportReportOutput {

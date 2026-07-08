@@ -145,6 +145,57 @@ export const measureInput = {
 export const measureOutput = MeasurementCommand;
 export type MeasureOutput = z.infer<typeof MeasurementCommand>;
 
+// --- suggest_optimizations -------------------------------------------------
+export const OptimizationKind = z.enum([
+  'oversized_texture',
+  'dense_mesh',
+  'missing_geometry_compression',
+  'missing_texture_compression',
+  'duplicate_materials',
+]);
+export type OptimizationKind = z.infer<typeof OptimizationKind>;
+
+export const OptimizationFinding = z.object({
+  kind: OptimizationKind,
+  severity: z.enum(['high', 'medium', 'low']),
+  target: z.string().describe('The mesh/texture/material this finding is about.'),
+  detail: z.string().describe('Human-readable explanation the agent can narrate.'),
+  estimatedSavings: z.string().nullable().describe('Rough win, e.g. "~8.4 MB GPU" or null.'),
+});
+export type OptimizationFinding = z.infer<typeof OptimizationFinding>;
+
+export const suggestOptimizationsInput = {
+  session_id: z.string(),
+  budget_triangles: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe('Target triangle budget for the whole scene.'),
+  budget_texture_mb: z
+    .number()
+    .positive()
+    .optional()
+    .describe('Target GPU texture memory budget in megabytes.'),
+};
+export const suggestOptimizationsOutput = z.object({
+  totals: z.object({
+    triangles: z.number().int(),
+    textureGpuBytes: z.number().int(),
+  }),
+  budget: z.object({
+    triangles: z.number().int().nullable(),
+    textureMb: z.number().nullable(),
+  }),
+  overBudget: z.object({
+    triangles: z.boolean(),
+    texture: z.boolean(),
+  }),
+  // Sorted by severity (high first): findings[0] is the worst offender.
+  findings: z.array(OptimizationFinding),
+});
+export type SuggestOptimizationsOutput = z.infer<typeof suggestOptimizationsOutput>;
+
 // --- export_report (gated at the agent layer via canUseTool) ---------------
 export const exportReportInput = {
   session_id: z.string(),

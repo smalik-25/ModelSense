@@ -167,6 +167,25 @@ export function createMcpServer(): McpServer {
   );
 
   server.registerTool(
+    'suggest_optimizations',
+    {
+      title: 'Suggest optimizations',
+      description:
+        'Rank deterministic optimization findings for the loaded scene: oversized textures, dense meshes, missing Draco/KTX2 compression, and duplicate materials. Optional budget_triangles and budget_texture_mb sharpen the findings. The agent narrates; the numbers are computed.',
+      inputSchema: schema.suggestOptimizationsInput,
+      outputSchema: schema.suggestOptimizationsOutput,
+    },
+    ({ session_id, budget_triangles, budget_texture_mb }) => {
+      try {
+        const { doc } = getSession(session_id);
+        return ok(domain.suggestOptimizations(doc, budget_triangles, budget_texture_mb));
+      } catch (err) {
+        return toFail(err, 'suggest_optimizations');
+      }
+    },
+  );
+
+  server.registerTool(
     'export_report',
     {
       title: 'Export report',

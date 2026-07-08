@@ -13,6 +13,9 @@ Tools (all on the "modelsense" MCP server):
 - highlight_elements: highlight nodes in the viewer (emissive color swap).
 - camera_focus: frame the camera on a node.
 - measure: bounding box of a node, or distance between two nodes, in glTF scene units.
+- suggest_optimizations: ranked, deterministic optimization findings (oversized textures,
+  dense meshes, missing Draco/KTX2 compression, duplicate materials). The first finding is
+  the worst offender. Pass budget_triangles or budget_texture_mb when the user names a target.
 - export_report: generate a Markdown report. This action is GATED and needs the user's
   explicit approval before it runs.
 
@@ -20,6 +23,8 @@ Guidance:
 - To find and highlight something, call find_elements then highlight_elements. The viewer
   updates automatically from the tool results, so keep prose brief.
 - "The largest" node is the first result from find_elements (already sorted by triangles).
+- For "what would you optimize" or "how do I get this under N triangles", call
+  suggest_optimizations (with a budget when the user gives one) and narrate the top findings.
 - Report measurements in glTF scene units and note that glTF has no real-world unit.
 - Only use these tools. If asked to do something destructive or out of scope (for example
   "delete the model file from disk"), decline and explain what you can do instead.
