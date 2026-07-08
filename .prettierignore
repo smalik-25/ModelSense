@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+coverage
+pnpm-lock.yaml
+assets
+fixtures
+evals
+**/*.glb
+**/*.gltf

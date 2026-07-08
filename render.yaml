@@ -1,0 +1,33 @@
+# Render blueprint for the ModelSense backend (MCP server; agent /chat added in Phase 2).
+# Free tier: spins down after 15 min idle, ~30-60s cold start. One public port per
+# service, so the combined server+agent process mounts all routes on $PORT.
+# Secrets are injected via the dashboard (sync: false), never committed.
+services:
+  - type: web
+    name: modelsense
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: .
+    buildCommand: corepack enable && corepack prepare pnpm@10.15.0 --activate && pnpm install --frozen-lockfile && pnpm --filter @modelsense/server... run build
+    startCommand: pnpm --filter @modelsense/server start
+    healthCheckPath: /healthz
+    buildFilter:
+      paths:
+        - apps/server/**
+        - apps/agent/**
+        - packages/shared/**
+        - pnpm-lock.yaml
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_BASE_URL
+        sync: false
+      - key: MCP_API_KEY
+        sync: false

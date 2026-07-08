@@ -1,0 +1,48 @@
+# --- Project-private planning docs (MUST stay untracked) ---
+CLAUDE.md
+PROJECT_PLAN.md
+
+# --- Secrets / env ---
+.env
+.env.*
+!.env.example
+
+# --- Node / pnpm ---
+node_modules/
+.pnpm-store/
+dist/
+build/
+*.tsbuildinfo
+.turbo/
+
+# --- Vite / web ---
+apps/web/dist/
+.vite/
+# Models copied from assets/models at build time (single source is assets/models)
+apps/web/public/models/
+
+# --- Test / coverage ---
+coverage/
+playwright-report/
+test-results/
+.playwright/
+
+# --- Python / uv (evals) ---
+evals/.venv/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# --- Eval run artifacts (local runs; committed reports live in evals/reports/) ---
+evals/results/*.parquet
+evals/.cache/
+
+# --- Large fetched assets (small GLBs are committed; large ones fetched by script) ---
+assets/large/
+
+# --- Editor / OS ---
+.DS_Store
+.idea/
+*.log
