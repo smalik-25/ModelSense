@@ -9,7 +9,9 @@
     "prebuild": "node scripts/copy-models.mjs",
     "build": "vite build",
     "preview": "vite preview --port 4173",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@modelsense/shared": "workspace:*",
@@ -20,6 +22,8 @@
     "three": "^0.180.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.0",
+    "@types/node": "^22.10.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/three": "^0.180.0",

@@ -99,7 +99,7 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
   };
 
   return (
-    <section className="chat">
+    <section className="chat" data-testid="chat">
       <div className="messages">
         {messages.length === 0 && (
           <div className="examples">
@@ -112,15 +112,15 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
           </div>
         )}
         {messages.map((m, i) => (
-          <div key={i} className={`msg ${m.role}`}>
+          <div key={i} className={`msg ${m.role}`} data-testid={`msg-${m.role}`}>
             {m.text || (busy && i === messages.length - 1 ? <span className="dots">…</span> : '')}
           </div>
         ))}
 
         {busy && tools.length > 0 && (
-          <div className="tools-strip">
+          <div className="tools-strip" data-testid="tools-strip">
             {tools.map((t, i) => (
-              <span key={i} className="tool-chip">
+              <span key={i} className="tool-chip" data-testid="tool-chip">
                 {t}
               </span>
             ))}
@@ -128,7 +128,7 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
         )}
 
         {approval && (
-          <div className="approval">
+          <div className="approval" data-testid="approval">
             <div className="approval-title">Approval required</div>
             <div className="muted">
               The agent wants to run <code>{approval.tool}</code>.
@@ -147,7 +147,7 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
         {error && <div className="error">Error: {error}</div>}
 
         {trace && (
-          <div className="trace">
+          <div className="trace" data-testid="trace">
             <span>{trace.turns} turns</span>
             <span>{(trace.durationMs / 1000).toFixed(1)}s</span>
             <span>${trace.costUsd.toFixed(4)}</span>
@@ -171,6 +171,7 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
         }}
       >
         <input
+          data-testid="chat-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={busy ? 'Working…' : 'Ask about the model'}
