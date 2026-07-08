@@ -2,6 +2,66 @@
 
 Running log of what changed and why. Newest first.
 
+## 2026-07-08 - Phase 3: evaluation harness + regression gate
+
+The differentiator. `evals/` is a Python 3.12 harness (uv) that scores the agent
+on a 50-task golden set with deterministic trajectory checks, a Haiku judge for
+context fidelity, and a CI regression gate.
+
+New 9th tool first (completes the tool set the resume targets claim): `suggest_optimizations`
+returns ranked, deterministic findings (oversized textures, dense meshes, missing
+Draco/KTX2, duplicate materials) with optional triangle/texture budgets. Shared Zod
+schema, server domain logic, unit tests, agent allowlist. This gives the optimization
+eval category a real tool to select rather than freeform reasoning.
+
+Golden answers are computed, not typed. `apps/server/src/golden-cli.ts` (`pnpm
+--filter @modelsense/server golden`) walks the committed GLBs with the exact domain
+logic the MCP server runs and writes `evals/golden/reference.json`. Tasks reference
+values by dotted path (e.g. `DamagedHelmet.totals.triangles`); `evals verify-golden`
+fails if any ref stops resolving, so a model change plus a reference regen keeps every
+assertion honest.
+
+Golden set: 50 tasks across lookup (12), multi_step (14), measurement (8),
+optimization (10), guardrail (6), each with a prompt, model, ordered expected tools
+with argument matchers, outcome assertions, and step/latency/cost budgets. Built on
+the three committed models (DamagedHelmet, CesiumMilkTruck, Box).
+
+Scoring:
+- Deterministic: tool selection (LCS, order-preserving, extras allowed), argument
+  validity (ref/regex/contains/one_of/approx matchers), outcome assertions (numbers
+  from reference.json, measurements computed from bbox facts, scene-command checks),
+  budgets, and a guardrail invariant (a gated tool must never succeed without an
+  approval). Completion = assertions pass AND expected tools present in order AND
+  within step budget (guardrail: assertions + invariant).
+- Judge: Haiku rates context fidelity (answer grounded in tool outputs). Live runs
+  only; recorded in the trajectory so CI never calls the API.
+
+Runner drives the real deployed path: `POST /chat` SSE + `/chat/approve` for gated
+tools, so the eval measures the same endpoint the browser uses (not a bypass). To
+support trajectory scoring, the agent SSE now carries tool `input` on call frames and
+`output` (structuredContent) on result frames; the web client ignores the extra
+fields. Results go to Parquet keyed by git SHA + timestamp, plus a markdown report
+with matplotlib charts in `evals/reports/`.
+
+CI gate (`evals gate`) replays committed trajectories in `evals/fixtures/` through the
+deterministic scorers only and fails the build if completion drops below
+`evals/baseline.json`. Wired into `.github/workflows/ci.yml` as a second job
+(uv + verify-golden + ruff + pytest + gate), fully offline.
+
+Fixtures are synthetic seeds for now (`scripts/seed_fixtures.py`, built from
+reference.json, a correct run across all categories) so the gate has something to run
+before a live baseline exists. `evals run --save-fixtures` replaces them with real
+recordings.
+
+Verified locally: 27 server unit tests (adds suggest_optimizations cases) green;
+all four TS packages typecheck; evals ruff clean, 15 pytest tests pass, gate 13/13 at
+100% with guardrail compliance 100%. The gate-fails-when-threshold-raised test proves
+the regression path (Phase 3 DoD).
+
+Cost note (unchanged from Phase 2 flag): a full 50-task live run is ~$14 at ~$0.28/task
+plus a few cents of Haiku judging. Not run yet; `evals run` prints an estimate and
+refuses to spend without `--yes`. Flagged for approval before the first baseline run.
+
 ## 2026-07-07 - Phase 2: agent loop + human-in-the-loop + Langfuse tracing
 
 Agent service (`apps/agent`):

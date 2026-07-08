@@ -6,8 +6,9 @@ every action: highlights, camera moves, measurements. Every agent turn is traced
 gated actions require human approval, and the whole system is measured by an
 evaluation harness with a CI regression gate.
 
-Status: Phase 2 complete (agent loop + human-in-the-loop + Langfuse tracing). Server
-and web deployed. See DEVLOG.md for the log.
+Status: Phase 3 complete (50-task evaluation harness + CI regression gate). Nine MCP
+inspection tools, agent loop with human-in-the-loop, Langfuse tracing. Server and web
+deployed. See DEVLOG.md for the log.
 
 MCP spec revision targeted: 2025-11-25 (Streamable HTTP transport).
 
@@ -100,7 +101,7 @@ The automated equivalent (auth, tool flow, and error handling) runs offline in
 - [x] Phase 0: scaffold, CI, shared schemas
 - [x] Phase 1: MCP server MVP (`list_models`, `load_model`, `get_scene_stats`, `find_elements`, `highlight_elements`) + viewer MVP, deployed
 - [x] Phase 2: agent loop + human-in-the-loop approval + Langfuse tracing (8 tools: adds `camera_focus`, `measure`, gated `export_report`)
-- [ ] Phase 3: 50-task eval harness + CI regression gate
+- [x] Phase 3: 9th tool (`suggest_optimizations`) + 50-task eval harness + CI regression gate ([evals/](evals/))
 - [ ] Phase 4: agent-generated Playwright tests + Inspector conformance + polish
 
 ## License
