@@ -2,6 +2,81 @@
 
 Running log of what changed and why. Newest first.
 
+## 2026-07-10 - Full audit and remediation pass
+
+A whole-codebase and live-site review (an 8-dimension adversarial pass over the
+server, agent, web, shared, evals, CI, docs, and the deployed path) found the
+project sound but surfaced one real correctness bug, a fragile free-tier demo, and
+a set of UX and doc-accuracy gaps. Worked through all of them. No new live API spend
+(the one spend-gated step, a fresh judged eval run, is left for a deliberate call).
+
+Stats correctness (the one real bug). `get_scene_stats` and `summarize` summed
+per-mesh geometry once per unique mesh, ignoring instancing, so CesiumMilkTruck
+reported 2856 triangles while it renders 3624 and `find_elements` (per-node) already
+reported 3624 - the two tools disagreed, and the wrong number was baked into
+`reference.json`. Fixed by multiplying per-mesh counts by instance count; made
+`get_scene_stats(node_id)` aggregate over the whole subtree (a parent node returned
+0 before); handled triangle strips/fans; made mesh/texture `sizeBytes` nullable so a
+null inspect size stays a normal result. Regenerated `reference.json` (truck now
+3624/4823/5) and updated the two truck-count fixtures to match; server tests +1
+instancing case, +1 subtree case, +1 authenticated GET/DELETE 405 case. Gate still
+50/50.
+
+Eval rigor and honesty (the differentiator). Tightened the refusal markers to
+decline-specific phrasing and corrected the comment (a false positive is a false
+PASS, not harmless); `guard-arbitrary-url` now asserts the untrusted URL was never
+forwarded to `load_model` (new `tool_input_absent`); the "how tall" measurement task
+now checks the narrated Y extent, not just that a diagonal overlay was drawn (new
+`answer_contains_dimension`). Corrected the false "fidelity is recorded in the
+trajectory" claim in judge.py/README, added a `Trajectory.context_fidelity` field so
+a judged run can persist its score and `evals score` reproduces it offline, and noted
+that the 4.48/5 headline and the improved-run latency/cost are carried from the
+baseline (only completion and tool-selection were re-measured).
+
+Live demo resilience, no new spend. The public demo runs on the 512MB Render free
+tier the risk log says OOM/502s after ~6 sustained turns. Client: a stall watchdog
+(75s) so a hung backend no longer wedges the chat forever, a terminal-frame guard so
+a mid-turn stream close surfaces an error instead of a silent empty bubble, HTTP
+502/503/504/429 mapped to the cold-start message, a "waking up" state after 3.5s, a
+Stop button, no leftover empty assistant bubble on error, and a wake ping on load and
+on tab focus. Server: shrank the GLB LRU from 25 to 8 and added a 120s server-side
+approval timeout so an abandoned approval card cannot hold a subprocess and Anthropic
+stream open. Decided against a 24/7 keep-warm cron: on the free tier's 750
+instance-hours/month cap it would run the service near-continuously and risk
+suspension late in the month, which is worse than a cold start the UI now explains.
+
+Multi-turn chat. The browser forwards a bounded history (last 12 display messages);
+the agent folds prior turns into the stateless prompt as context so "now focus on
+them" resolves. Server `/chat` accepts an optional `history` array.
+
+Web UX. Responsive layout (100dvh, stacks under 760px), the approval card shows the
+tool input it is asking to approve, a loading indicator while a GLB downloads, message
+auto-scroll, aria-live on messages plus role=alert on errors and a labelled input, an
+error boundary around the R3F canvas so a bad GLB or missing WebGL no longer white-
+screens the app, approve/reject disabled while in flight, and the viewer now honors
+the `exclusive` highlight flag (additive by default) instead of always replacing.
+
+Server/agent hardening. `load_model` URL fetch now caps size (64MB) and times out
+(20s); the bearer token is compared with `crypto.timingSafeEqual`; an empty Origin
+allowlist logs a warning instead of silently allowing all; built-in tools are in
+`disallowedTools` as well as denied by the catch-all; the SSE end frame is not written
+to an already-closed socket; Langfuse records first-class `usageDetails`/`costDetails`
+and the visitor-facing trace link is gated behind `LANGFUSE_TRACES_PUBLIC` so it no
+longer lands on a login wall.
+
+Cleanup and CI. Removed dead code (the catalog `sampleHighlight` field and the
+`.dev-panel`/`pre.cmd` CSS from the removed dev panel; the unused branded `SessionId`
+types, which are now a plain schema used as the single source for the `session_id`
+arg; `Vec3` reused for the bbox fields). CI cancels superseded runs and caches the
+Playwright browser. Reframed AGENTS.md and the e2e benchmark as a framework, since the
+generated suite is not yet populated.
+
+Verification: server unit tests 24 pass, all four TypeScript packages typecheck
+clean, and the eval suite passes (verify-golden, gate 50/50 with guardrail 100%,
+ruff, pytest 21). CI additionally runs lint, the web build, MCP Inspector
+conformance, and Playwright e2e; the web changes preserve the e2e test ids and the
+Send control the specs drive.
+
 ## 2026-07-08 - Phase 4: e2e tests, MCP conformance, and polish
 
 Playwright e2e for the web app (`apps/web/tests/e2e/handwritten/`): the viewer
@@ -96,7 +171,9 @@ deterministic scorers only and fails the build if completion drops below
 Fixtures are synthetic seeds for now (`scripts/seed_fixtures.py`, built from
 reference.json, a correct run across all categories) so the gate has something to run
 before a live baseline exists. `evals run --save-fixtures` replaces them with real
-recordings.
+recordings. (Update: the committed fixtures were replaced with the 50 real live
+recordings later the same day; see the 2026-07-10 entry for the two that were
+re-derived after the stats fix.)
 
 Verified locally: all TS unit tests green (30 across the four packages, incl. new
 suggest_optimizations cases; the MCP listTools conformance test now expects nine

@@ -37,3 +37,7 @@ services:
       # Optional: enables the clickable Langfuse trace deep link in the UI.
       - key: LANGFUSE_PROJECT_ID
         sync: false
+      # Optional: set to "true" only if the Langfuse project shares traces
+      # publicly, so the visitor-facing deep link does not hit a login wall.
+      - key: LANGFUSE_TRACES_PUBLIC
+        sync: false

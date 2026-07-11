@@ -1,8 +1,10 @@
 # AGENTS.md
 
 How the end-to-end tests for the web app are produced and maintained, and the
-split between hand-written and agent-generated specs. This is the "agent vs
-baseline" comparison artifact for the project.
+split between hand-written and agent-generated specs. This is the framework for
+the "agent vs baseline" comparison; the generated suite and the benchmark numbers
+are populated once the local generate/heal loop is run (see below), so today the
+committed suite is the hand-written baseline only.
 
 ## Layout
 

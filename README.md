@@ -13,6 +13,19 @@ MCP Inspector conformance in CI. Server and web deployed. See DEVLOG.md for the 
 
 MCP spec revision targeted: 2025-11-25 (Streamable HTTP transport).
 
+## Live demo
+
+https://model-sense-web.vercel.app
+
+Load the page, wait a moment, then ask one of the example questions. Follow-up
+questions keep context, so "now focus on them" works after a highlight.
+
+The backend runs on a Render free instance that sleeps after 15 minutes idle, so the
+first request after a while takes ~30-60s to wake (the UI shows a "waking up" state)
+and the demo can pause to restart under heavy back-to-back use. That is a hosting
+choice, not the app: the eval harness and MCP conformance both run against a local or
+paid instance.
+
 ## Architecture
 
 ```mermaid

@@ -20,9 +20,10 @@ maintenance cost.
 
 ## Results
 
-Fill in after running the generate/heal loop locally (`npx playwright
-init-agents --loop=claude`, generate into `tests/e2e/generated/`, review, then run
-each suite 20x).
+Status: framework only. The generated suite is not yet committed, so the
+agent-generated column is unpopulated. Fill in after running the generate/heal loop
+locally (`npx playwright init-agents --loop=claude`, generate into
+`tests/e2e/generated/`, review, then run each suite 20x).
 
 | Metric | Hand-written | Agent-generated |
 |---|---|---|
