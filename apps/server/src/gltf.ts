@@ -1,6 +1,6 @@
 import { stat } from 'node:fs/promises';
 import { NodeIO, getBounds } from '@gltf-transform/core';
-import type { Document, Node as GNode } from '@gltf-transform/core';
+import type { Document, Material, Node as GNode, Texture } from '@gltf-transform/core';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import { inspect } from '@gltf-transform/functions';
 import { CameraFocusCommand, HighlightCommand, MeasurementCommand } from '@modelsense/shared';
@@ -16,8 +16,18 @@ import type {
 } from '@modelsense/shared';
 import { ToolError } from './tool-result';
 
-/** glTF primitive mode for triangles (GLTF.MeshPrimitive.mode). */
+/** glTF primitive modes (GLTF.MeshPrimitive.mode). */
 const TRIANGLES = 4;
+const TRIANGLE_STRIP = 5;
+const TRIANGLE_FAN = 6;
+
+/** Triangles a primitive contributes for its draw mode; 0 for non-triangle modes. */
+function trianglesForMode(mode: number, count: number): number {
+  if (mode === TRIANGLES) return Math.floor(count / 3);
+  // A strip or fan of N vertices renders N-2 triangles.
+  if (mode === TRIANGLE_STRIP || mode === TRIANGLE_FAN) return Math.max(count - 2, 0);
+  return 0;
+}
 
 function createIO(): NodeIO {
   // Register all standard extensions so extension names are reported. Draco/KTX2
@@ -27,11 +37,12 @@ function createIO(): NodeIO {
   return new NodeIO().registerExtensions(ALL_EXTENSIONS);
 }
 
-function toFiniteVec(v: readonly number[]): number[] {
-  return [0, 1, 2].map((i) => {
+function toFiniteVec(v: readonly number[]): [number, number, number] {
+  const f = (i: number): number => {
     const n = v[i] ?? 0;
     return Number.isFinite(n) ? n : 0;
-  });
+  };
+  return [f(0), f(1), f(2)];
 }
 
 // --- loading ---------------------------------------------------------------
@@ -42,10 +53,36 @@ export async function loadLocal(path: string): Promise<{ doc: Document; bytes: n
   return { doc, bytes: info.size };
 }
 
+/** Cap on a fetched GLB so a large remote model cannot OOM the small instance. */
+const MAX_URL_MODEL_BYTES = 64 * 1_000_000;
+const URL_FETCH_TIMEOUT_MS = 20_000;
+
 export async function loadUrl(url: string): Promise<{ doc: Document; bytes: number }> {
-  const res = await fetch(url);
+  let res: Response;
+  try {
+    res = await fetch(url, { signal: AbortSignal.timeout(URL_FETCH_TIMEOUT_MS) });
+  } catch (err) {
+    if (err instanceof Error && err.name === 'TimeoutError') {
+      throw new ToolError(`Fetch timed out after ${URL_FETCH_TIMEOUT_MS / 1000}s for ${url}`);
+    }
+    throw new ToolError(`Fetch failed for ${url}`);
+  }
   if (!res.ok) throw new ToolError(`Fetch failed (${res.status}) for ${url}`);
+
+  // Reject early on a declared oversize, then guard the actual bytes in case the
+  // header lies or is absent.
+  const declared = Number(res.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > MAX_URL_MODEL_BYTES) {
+    throw new ToolError(
+      `Model is ${(declared / 1_000_000).toFixed(1)} MB, over the ${MAX_URL_MODEL_BYTES / 1_000_000} MB limit.`,
+    );
+  }
   const buf = new Uint8Array(await res.arrayBuffer());
+  if (buf.byteLength > MAX_URL_MODEL_BYTES) {
+    throw new ToolError(
+      `Model is ${(buf.byteLength / 1_000_000).toFixed(1)} MB, over the ${MAX_URL_MODEL_BYTES / 1_000_000} MB limit.`,
+    );
+  }
   const doc = await createIO().readBinary(buf);
   return { doc, bytes: buf.byteLength };
 }
@@ -62,6 +99,24 @@ function findNodeById(doc: Document, id: string): GNode | undefined {
   return nodes.find((n, i) => nodeId(n, i) === id);
 }
 
+/** Every node in the subtree rooted at `node` (the node itself plus descendants). */
+function collectSubtree(node: GNode): GNode[] {
+  const out: GNode[] = [node];
+  for (const child of node.listChildren()) out.push(...collectSubtree(child));
+  return out;
+}
+
+/** The distinct textures a material references across its PBR slots. */
+function materialTextures(mat: Material): Texture[] {
+  return [
+    mat.getBaseColorTexture(),
+    mat.getMetallicRoughnessTexture(),
+    mat.getNormalTexture(),
+    mat.getEmissiveTexture(),
+    mat.getOcclusionTexture(),
+  ].filter((t): t is Texture => t !== null);
+}
+
 function nodeGeometry(node: GNode): { vertices: number; triangles: number } {
   const mesh = node.getMesh();
   let vertices = 0;
@@ -72,7 +127,7 @@ function nodeGeometry(node: GNode): { vertices: number; triangles: number } {
       if (pos) vertices += pos.getCount();
       const indices = prim.getIndices();
       const count = indices ? indices.getCount() : (pos?.getCount() ?? 0);
-      if (prim.getMode() === TRIANGLES) triangles += Math.floor(count / 3);
+      triangles += trianglesForMode(prim.getMode(), count);
     }
   }
   return { vertices, triangles };
@@ -87,8 +142,14 @@ export function summarize(doc: Document): {
 } {
   const root = doc.getRoot();
   const report = inspect(doc);
+  // Multiply per-mesh geometry by how many nodes reference the mesh, so an
+  // instanced mesh (e.g. a wheel reused across nodes) counts once per instance.
+  // This makes the scene totals match find_elements' per-node summation.
   const totals = report.meshes.properties.reduce(
-    (acc, m) => ({ vertices: acc.vertices + m.vertices, triangles: acc.triangles + m.glPrimitives }),
+    (acc, m) => ({
+      vertices: acc.vertices + m.vertices * m.instances,
+      triangles: acc.triangles + m.glPrimitives * m.instances,
+    }),
     { vertices: 0, triangles: 0 },
   );
   return {
@@ -106,51 +167,85 @@ export function summarize(doc: Document): {
 
 export function sceneStats(doc: Document, nodeId?: string): GetSceneStatsOutput {
   const report = inspect(doc);
-  const meshes = doc.getRoot().listMeshes();
+  const root = doc.getRoot();
+  const meshes = root.listMeshes();
+  const docTextures = root.listTextures();
 
   const meshStats = report.meshes.properties.map((m, i) => ({
     id: `mesh-${i}`,
     name: m.name,
     vertices: m.vertices,
     triangles: m.glPrimitives,
-    sizeBytes: m.size,
+    sizeBytes: m.size ?? null,
     instances: m.instances,
   }));
   const textureStats = report.textures.properties.map((t) => ({
     name: t.name,
     resolution: t.resolution,
     mimeType: t.mimeType,
-    sizeBytes: t.size,
-    gpuSizeBytes: t.gpuSize,
+    sizeBytes: t.size ?? null,
+    gpuSizeBytes: t.gpuSize ?? null,
   }));
 
   if (nodeId) {
     const node = findNodeById(doc, nodeId);
     if (!node) throw new ToolError(`Unknown node_id "${nodeId}".`);
-    const mesh = node.getMesh();
-    const idx = mesh ? meshes.indexOf(mesh) : -1;
-    const row = idx >= 0 ? meshStats[idx] : undefined;
-    const only = row ? [row] : [];
+
+    // Aggregate over the whole subtree (self + descendants) so a parent/group node
+    // reports the geometry it contains, matching the subtree scope getBounds uses.
+    // Each referencing node counts the mesh once (instancing-correct).
+    const subtree = collectSubtree(node);
+    const meshRefsInSubtree = new Map<number, number>();
+    const materials = new Set<Material>();
+    const textures = new Set<Texture>();
+    let vertices = 0;
+    let triangles = 0;
+    let drawCallEstimate = 0;
+
+    for (const n of subtree) {
+      const mesh = n.getMesh();
+      if (!mesh) continue;
+      const idx = meshes.indexOf(mesh);
+      const row = idx >= 0 ? meshStats[idx] : undefined;
+      if (idx >= 0 && row) {
+        meshRefsInSubtree.set(idx, (meshRefsInSubtree.get(idx) ?? 0) + 1);
+        vertices += row.vertices;
+        triangles += row.triangles;
+        drawCallEstimate += report.meshes.properties[idx]?.meshPrimitives ?? 0;
+      }
+      for (const prim of mesh.listPrimitives()) {
+        const mat = prim.getMaterial();
+        if (!mat) continue;
+        materials.add(mat);
+        for (const tex of materialTextures(mat)) textures.add(tex);
+      }
+    }
+
+    const meshRows = [...meshRefsInSubtree.entries()].map(([idx, count]) => ({
+      ...meshStats[idx]!,
+      instances: count,
+    }));
+    const textureRows = [...textures]
+      .map((t) => docTextures.indexOf(t))
+      .filter((i) => i >= 0)
+      .map((i) => textureStats[i]!);
+
     return {
       scope: nodeId,
-      totals: {
-        vertices: only.reduce((a, m) => a + m.vertices, 0),
-        triangles: only.reduce((a, m) => a + m.triangles, 0),
-        drawCallEstimate: idx >= 0 ? (report.meshes.properties[idx]?.meshPrimitives ?? 0) : 0,
-        materials: mesh ? mesh.listPrimitives().filter((p) => p.getMaterial()).length : 0,
-        textures: 0,
-      },
-      meshes: only,
-      textures: [],
+      totals: { vertices, triangles, drawCallEstimate, materials: materials.size, textures: textures.size },
+      meshes: meshRows,
+      textures: textureRows,
     };
   }
 
+  // Scene totals multiply per-mesh geometry by instance count so instanced meshes
+  // are counted per render, agreeing with find_elements' per-node summation.
   return {
     scope: 'scene',
     totals: {
-      vertices: meshStats.reduce((a, m) => a + m.vertices, 0),
-      triangles: meshStats.reduce((a, m) => a + m.triangles, 0),
-      drawCallEstimate: report.meshes.properties.reduce((a, m) => a + m.meshPrimitives, 0),
+      vertices: report.meshes.properties.reduce((a, m) => a + m.vertices * m.instances, 0),
+      triangles: report.meshes.properties.reduce((a, m) => a + m.glPrimitives * m.instances, 0),
+      drawCallEstimate: report.meshes.properties.reduce((a, m) => a + m.meshPrimitives * m.instances, 0),
       materials: report.materials.properties.length,
       textures: report.textures.properties.length,
     },
@@ -329,7 +424,9 @@ export function suggestOptimizations(
   const extensions = new Set(root.listExtensionsUsed().map((e) => e.extensionName));
   const findings: OptimizationFinding[] = [];
 
-  const totalTriangles = report.meshes.properties.reduce((a, m) => a + m.glPrimitives, 0);
+  // Rendered triangles (instanced), consistent with get_scene_stats and the
+  // user's "get this under N triangles" budget framing.
+  const totalTriangles = report.meshes.properties.reduce((a, m) => a + m.glPrimitives * m.instances, 0);
   const textureGpuBytes = report.textures.properties.reduce((a, t) => a + (t.gpuSize ?? t.size), 0);
   const budgetTextureBytes = budgetTextureMb != null ? budgetTextureMb * 1_000_000 : null;
   const overTriangles = budgetTriangles != null && totalTriangles > budgetTriangles;

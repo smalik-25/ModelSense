@@ -52,6 +52,18 @@ describe('MCP server over HTTP', () => {
   );
 
   it(
+    'returns 405 for authenticated GET and DELETE (stateless: no protocol sessions)',
+    async () => {
+      const headers = { Authorization: `Bearer ${API_KEY}` };
+      const get = await fetch(`${baseUrl}/mcp`, { method: 'GET', headers });
+      expect(get.status).toBe(405);
+      const del = await fetch(`${baseUrl}/mcp`, { method: 'DELETE', headers });
+      expect(del.status).toBe(405);
+    },
+    T,
+  );
+
+  it(
     'lists all nine tools',
     async () => {
       const { client, transport } = await connect();

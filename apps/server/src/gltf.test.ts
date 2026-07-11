@@ -82,6 +82,32 @@ describe('domain (against committed GLB fixtures)', () => {
     expect(node.totals.triangles).toBe(768);
   });
 
+  it('get_scene_stats: scene totals count instanced meshes per render, matching find_elements', () => {
+    // The truck reuses one Wheels mesh (768 tris) across two nodes, so the scene
+    // renders 2088 + 768*2 = 3624 triangles and 3167 + 828*2 = 4823 vertices.
+    const scene = domain.sceneStats(truck);
+    expect(scene.totals.triangles).toBe(3624);
+    expect(scene.totals.vertices).toBe(4823);
+
+    // get_scene_stats must agree with find_elements' per-node summation.
+    const perNode = domain
+      .findElements(truck, '', 500)
+      .elements.reduce((a, e) => a + e.triangles, 0);
+    expect(perNode).toBe(3624);
+  });
+
+  it('get_scene_stats: node scope aggregates the whole subtree, not just the node mesh', () => {
+    // Yup2Zup is an empty root parent whose subtree is the entire truck.
+    const root = domain.sceneStats(truck, 'Yup2Zup');
+    expect(root.totals.triangles).toBe(3624);
+    expect(root.meshes.length).toBe(2);
+
+    // Node is an empty parent of a single wheel.
+    const oneWheel = domain.sceneStats(truck, 'Node');
+    expect(oneWheel.totals.triangles).toBe(768);
+    expect(oneWheel.meshes).toHaveLength(1);
+  });
+
   it('get_scene_stats: unknown node_id throws a ToolError', () => {
     expect(() => domain.sceneStats(truck, 'does-not-exist')).toThrow();
   });

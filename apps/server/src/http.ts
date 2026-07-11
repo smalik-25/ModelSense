@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import express from 'express';
 import type { Request, Response } from 'express';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -11,9 +12,24 @@ const jsonRpcError = (code: number, message: string) => ({
   id: null,
 });
 
+/** Length-checked, timing-safe string comparison for the shared bearer token. */
+function safeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
+
 export function createApp(env: Env): express.Express {
   const app = express();
   app.use(express.json({ limit: '4mb' }));
+
+  // The Origin allowlist is DNS-rebinding protection for browser callers. /mcp is
+  // additionally bearer-gated and reached server-to-server (no Origin), so an empty
+  // allowlist is not a hole, but surface it so a config regression is not silent.
+  if (env.allowedOrigins.length === 0) {
+    logger.warn('MCP Origin allowlist is empty; relying on bearer auth alone for /mcp.');
+  }
 
   app.get('/healthz', (_req: Request, res: Response) => {
     res.json({ status: 'ok', service: 'modelsense-server' });
@@ -31,9 +47,10 @@ export function createApp(env: Env): express.Express {
     next();
   });
 
-  // Shared bearer auth.
+  // Shared bearer auth (timing-safe compare).
+  const expectedAuth = `Bearer ${env.mcpApiKey}`;
   app.use('/mcp', (req: Request, res: Response, next) => {
-    if (req.headers.authorization !== `Bearer ${env.mcpApiKey}`) {
+    if (!safeEqual(req.headers.authorization ?? '', expectedAuth)) {
       res.status(401).json(jsonRpcError(-32001, 'Unauthorized'));
       return;
     }
