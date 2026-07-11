@@ -51,6 +51,22 @@ export const HIGHLIGHT_TURN = [
   { t: 'done', turns: 4, costUsd: 0.12, durationMs: 8000, inputTokens: 5000, outputTokens: 200 },
 ];
 
+/**
+ * A find -> highlight turn that emits a highlight scene command for the given
+ * truck node ids. Used by the highlight-fidelity spec to check the command
+ * actually lands on the matching mesh(es) in the live scene.
+ */
+export function truckHighlightTurn(nodeIds: string[]): unknown[] {
+  return [
+    { t: 'tool', phase: 'call', name: t('load_model'), id: 'a', input: { model_id: 'CesiumMilkTruck' } },
+    { t: 'tool', phase: 'call', name: t('find_elements'), id: 'b', input: { query: 'wheel' } },
+    { t: 'tool', phase: 'call', name: t('highlight_elements'), id: 'c', input: { node_ids: nodeIds } },
+    { t: 'text', text: `Highlighted ${nodeIds.join(', ')}.` },
+    { t: 'scene', command: { type: 'highlight', nodeIds, color: '#ffcc00', exclusive: true } },
+    { t: 'done', turns: 4, costUsd: 0.05, durationMs: 8000, inputTokens: 2600, outputTokens: 400 },
+  ];
+}
+
 /** A gated export_report turn that asks for approval. */
 export const APPROVAL_TURN = [
   { t: 'tool', phase: 'call', name: t('load_model'), id: 'a', input: { model_id: 'DamagedHelmet' } },

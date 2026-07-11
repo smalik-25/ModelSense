@@ -173,8 +173,11 @@ Four offline GitHub Actions jobs (never touch a live API):
 - `conformance`: MCP Inspector CLI against the built server (`tools/list` +
   `tools/call` over Streamable HTTP).
 - `e2e`: Playwright against the built web app with the agent mocked at the network
-  layer. Agent-generated specs and the handwritten-vs-generated benchmark are
-  documented in [AGENTS.md](AGENTS.md) and [docs/e2e-benchmark.md](docs/e2e-benchmark.md).
+  layer, including a highlight-fidelity check that reads emissive off the live
+  three.js scene so a highlight command has to actually land on the target mesh (it
+  catches glTF names that GLTFLoader rewrites, like `Wheels.001` becoming `Wheels001`).
+  Agent-generated specs and the handwritten-vs-generated benchmark are documented in
+  [AGENTS.md](AGENTS.md) and [docs/e2e-benchmark.md](docs/e2e-benchmark.md).
 
 ## Roadmap
 

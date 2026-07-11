@@ -3,6 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bounds, Html, Line, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { CameraFocusCommand, HighlightCommand, MeasurementCommand } from '@modelsense/shared';
+import { objectMatchesTargets } from '../lib/highlight';
 
 const originalEmissive = new WeakMap<THREE.MeshStandardMaterial, number>();
 
@@ -19,21 +20,14 @@ function Model({ url, highlight }: { url: string; highlight: HighlightCommand | 
     const targets = new Set(highlight?.nodeIds ?? []);
     const color = new THREE.Color(highlight?.color ?? '#ffcc00');
     scene.traverse((obj) => {
-      if (!(obj instanceof THREE.Mesh)) return;
-      const mat = obj.material;
+      // Duck-type on `.isMesh` instead of `instanceof THREE.Mesh` so the match
+      // survives a bundler resolving a second copy of three.
+      if (!(obj as THREE.Mesh).isMesh) return;
+      const mat = (obj as THREE.Mesh).material;
       if (!isStandardMaterial(mat)) return;
       if (!originalEmissive.has(mat)) originalEmissive.set(mat, mat.emissive.getHex());
 
-      let node: THREE.Object3D | null = obj;
-      let targeted = false;
-      while (node) {
-        if (targets.has(node.name)) {
-          targeted = true;
-          break;
-        }
-        node = node.parent;
-      }
-      if (targeted) {
+      if (objectMatchesTargets(obj, targets)) {
         mat.emissive.copy(color);
         mat.emissiveIntensity = 1;
       } else {
@@ -119,7 +113,20 @@ export function Viewer({
   measurement: MeasurementCommand | null;
 }) {
   return (
-    <Canvas camera={{ position: [3, 2, 4], fov: 45 }} dpr={[1, 2]}>
+    <Canvas
+      camera={{ position: [3, 2, 4], fov: 45 }}
+      dpr={[1, 2]}
+      onCreated={(state) => {
+        // Test seam: the highlight-fidelity e2e sets `__MODELSENSE_TEST` before
+        // load so it can read emissive state off the live scene. No-op otherwise,
+        // so production visitors never get the global.
+        const w = window as unknown as {
+          __MODELSENSE_TEST?: boolean;
+          __modelsenseScene?: THREE.Object3D;
+        };
+        if (w.__MODELSENSE_TEST) w.__modelsenseScene = state.scene;
+      }}
+    >
       <color attach="background" args={['#0b0d12']} />
       <hemisphereLight intensity={0.5} />
       <ambientLight intensity={0.5} />
