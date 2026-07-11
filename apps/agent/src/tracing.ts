@@ -88,16 +88,20 @@ export function startTurnTrace(env: Env, message: string, modelId: string): Turn
     finish(output, usage) {
       root.update({
         output,
-        metadata: {
-          modelId,
-          turns: usage.turns,
-          costUsd: usage.costUsd,
-          inputTokens: usage.inputTokens,
-          outputTokens: usage.outputTokens,
+        // First-class usage/cost so Langfuse aggregates tokens and spend, not just
+        // free-form metadata.
+        usageDetails: {
+          input: usage.inputTokens,
+          output: usage.outputTokens,
+          total: usage.inputTokens + usage.outputTokens,
         },
+        costDetails: { total: usage.costUsd },
+        metadata: { modelId, turns: usage.turns },
       });
       root.end();
-      return env.langfuseProjectId
+      // Only hand a visitor a deep link if the project shares traces publicly;
+      // otherwise the link lands on a login wall.
+      return env.langfuseProjectId && env.langfusePublicTraces
         ? `${env.langfuseBaseUrl}/project/${env.langfuseProjectId}/traces/${traceId}`
         : undefined;
     },

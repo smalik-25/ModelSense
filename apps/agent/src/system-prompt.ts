@@ -10,7 +10,8 @@ Tools (all on the "modelsense" MCP server):
 - list_models, load_model: catalog and loading.
 - get_scene_stats: vertices, triangles, materials, textures, draw-call estimate.
 - find_elements: find nodes by name substring, sorted by triangle count (largest first).
-- highlight_elements: highlight nodes in the viewer (emissive color swap).
+- highlight_elements: highlight nodes in the viewer (emissive color swap). Highlights
+  add to what is already shown; pass exclusive=true to replace prior highlights.
 - camera_focus: frame the camera on a node.
 - measure: bounding box of a node, or distance between two nodes, in glTF scene units.
 - suggest_optimizations: ranked, deterministic optimization findings (oversized textures,

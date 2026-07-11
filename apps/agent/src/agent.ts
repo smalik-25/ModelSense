@@ -53,6 +53,43 @@ export interface ApprovalRequest {
   input: unknown;
 }
 
+/** One prior turn of the conversation, forwarded so follow-up references resolve. */
+export interface ChatTurn {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+// Built-in Claude Code tools are already blocked by the canUseTool catch-all
+// (only our MCP tools are allowlisted); disallow them explicitly too as
+// defense-in-depth so they never enter the tool set in the first place.
+const DISALLOWED_BUILTINS = [
+  'Bash',
+  'Read',
+  'Write',
+  'Edit',
+  'MultiEdit',
+  'Glob',
+  'Grep',
+  'WebFetch',
+  'WebSearch',
+  'NotebookEdit',
+  'Task',
+  'TodoWrite',
+];
+
+/**
+ * Fold prior turns into the single stateless prompt as context. The server holds
+ * no session, so the browser forwards a bounded history; embedding it as a
+ * transcript lets follow-ups like "now focus on them" resolve their referents.
+ */
+function buildPromptText(message: string, history?: ChatTurn[]): string {
+  if (!history || history.length === 0) return message;
+  const transcript = history
+    .map((t) => `${t.role === 'user' ? 'User' : 'Assistant'}: ${t.text}`)
+    .join('\n');
+  return `Conversation so far (for context; do not re-answer these):\n${transcript}\n\nUser's new message:\n${message}`;
+}
+
 /** Minimal view of the Anthropic content blocks we care about. */
 interface Block {
   type: string;
@@ -127,12 +164,14 @@ export interface RunTurnOptions {
   env: Env;
   emit: (event: AgentEvent) => void;
   signal: AbortSignal;
+  /** Prior conversation turns, oldest first, for follow-up context. */
+  history?: ChatTurn[];
   /** Ask the human to approve a gated tool. Resolves true to allow. */
   requestApproval?: (req: ApprovalRequest) => Promise<boolean>;
 }
 
 export async function runTurn(opts: RunTurnOptions): Promise<void> {
-  const { message, modelId, env, emit, signal, requestApproval } = opts;
+  const { message, modelId, env, emit, signal, history, requestApproval } = opts;
   const abort = new AbortController();
   signal.addEventListener('abort', () => abort.abort());
   const trace = startTurnTrace(env, message, modelId);
@@ -142,7 +181,7 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
 
   try {
     for await (const msg of query({
-      prompt: singleUserMessage(message),
+      prompt: singleUserMessage(buildPromptText(message, history)),
       options: {
         model: env.model,
         systemPrompt: buildSystemPrompt(modelId),
@@ -158,6 +197,7 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
           },
         },
         allowedTools: SAFE_TOOLS,
+        disallowedTools: DISALLOWED_BUILTINS,
         maxTurns: env.maxTurns,
         permissionMode: 'default',
         abortController: abort,
@@ -171,7 +211,7 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
               ? { behavior: 'allow', updatedInput: input }
               : { behavior: 'deny', message: 'The user declined this action.' };
           }
-          // Anything reaching here is not allowlisted (e.g. built-in tools) — deny.
+          // Anything reaching here is not allowlisted (e.g. built-in tools), so deny.
           return { behavior: 'deny', message: `Tool ${toolName} is not permitted.` };
         },
       },

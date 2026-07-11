@@ -13,6 +13,25 @@ interface Pending {
 // here; POST /chat/approve resolves it. Single-process, in-memory (fine for the demo).
 const pendingApprovals = new Map<string, Pending>();
 
+// An abandoned approval card must not wedge the turn (and leak an Agent-SDK
+// subprocess + Anthropic stream) forever. Auto-deny after this long.
+const APPROVAL_TIMEOUT_MS = 120_000;
+
+/** Coerce the optional forwarded history into typed, bounded chat turns. */
+function parseHistory(raw: unknown): { role: 'user' | 'assistant'; text: string }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(
+      (h): h is { role: 'user' | 'assistant'; text: string } =>
+        !!h &&
+        typeof h === 'object' &&
+        typeof (h as { text?: unknown }).text === 'string' &&
+        ((h as { role?: unknown }).role === 'user' || (h as { role?: unknown }).role === 'assistant'),
+    )
+    .slice(-20)
+    .map((h) => ({ role: h.role, text: h.text }));
+}
+
 export function createAgentApp(env: Env): express.Express {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
@@ -37,10 +56,16 @@ export function createAgentApp(env: Env): express.Express {
     next();
   });
 
+  // Served when the agent runs standalone; in the combined deployment the MCP
+  // server mounts its own /healthz first, which answers instead.
   app.get('/healthz', (_req: Request, res: Response) => {
     res.json({ status: 'ok', service: 'modelsense-agent' });
   });
 
+  // Resolves a pending human approval. Unauthenticated by design for the
+  // single-user demo: the id is the tool_use id (an unguessable per-turn token),
+  // and only a currently-pending id is accepted. A multi-user deployment would
+  // bind this to the originating session (see docs/auth.md).
   app.post('/chat/approve', (req: Request, res: Response) => {
     const id = typeof req.body?.id === 'string' ? req.body.id : '';
     const approved = req.body?.approved === true;
@@ -57,6 +82,7 @@ export function createAgentApp(env: Env): express.Express {
   app.post('/chat', async (req: Request, res: Response) => {
     const message = typeof req.body?.message === 'string' ? req.body.message : '';
     const modelId = typeof req.body?.modelId === 'string' ? req.body.modelId : 'DamagedHelmet';
+    const history = parseHistory(req.body?.history);
     if (!message) {
       res.status(400).json({ error: 'message required' });
       return;
@@ -89,19 +115,34 @@ export function createAgentApp(env: Env): express.Express {
     const requestApproval = (reqA: ApprovalRequest): Promise<boolean> =>
       new Promise<boolean>((resolve) => {
         localIds.add(reqA.id);
-        pendingApprovals.set(reqA.id, { resolve });
+        const timer = setTimeout(() => {
+          if (pendingApprovals.delete(reqA.id)) {
+            send({ t: 'text', text: '\n(Approval timed out; the action was not run.)' });
+            resolve(false);
+          }
+        }, APPROVAL_TIMEOUT_MS);
+        pendingApprovals.set(reqA.id, {
+          resolve: (approved) => {
+            clearTimeout(timer);
+            resolve(approved);
+          },
+        });
         send({ t: 'approval', id: reqA.id, tool: reqA.tool, input: reqA.input });
       });
 
     try {
-      await runTurn({ message, modelId, env, emit: send, signal: ac.signal, requestApproval });
+      await runTurn({ message, modelId, env, history, emit: send, signal: ac.signal, requestApproval });
     } catch (err) {
       logger.error({ err }, '/chat turn failed');
       send({ t: 'error', message: 'Agent error' });
     } finally {
       clearInterval(heartbeat);
-      res.write('event: end\ndata: {}\n\n');
-      res.end();
+      // The client may already be gone (res.on('close') fired); do not write a
+      // trailing frame to a closed socket.
+      if (!res.writableEnded) {
+        res.write('event: end\ndata: {}\n\n');
+        res.end();
+      }
     }
   });
 

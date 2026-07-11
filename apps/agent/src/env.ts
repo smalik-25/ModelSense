@@ -19,6 +19,9 @@ export interface Env {
   langfuseSecretKey: string;
   langfuseBaseUrl: string;
   langfuseProjectId: string;
+  /** Only surface the Langfuse trace deep link when the project shares traces
+   * publicly; otherwise a visitor clicking it hits a login wall. */
+  langfusePublicTraces: boolean;
 }
 
 const real = (v: string | undefined): string =>
@@ -45,5 +48,6 @@ export function loadEnv(): Env {
     langfuseSecretKey: real(process.env.LANGFUSE_SECRET_KEY),
     langfuseBaseUrl: process.env.LANGFUSE_BASE_URL ?? 'https://us.cloud.langfuse.com',
     langfuseProjectId: process.env.LANGFUSE_PROJECT_ID ?? '',
+    langfusePublicTraces: process.env.LANGFUSE_TRACES_PUBLIC === 'true',
   };
 }
