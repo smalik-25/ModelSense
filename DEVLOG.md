@@ -14,32 +14,48 @@ deterministically calls load_model, find_elements, then highlight_elements and e
 emitted; the "narrated but never called the tool" theory is wrong. Cost ~0.20 across
 the three repro turns (no eval run).
 
-Found the real bug while tracing the viewer. three's GLTFLoader runs every node
-name through `sanitizeNodeName`, which strips `[ ] . : /`, so glTF "Wheels.001"
-loads as a mesh named "Wheels001" and "Node.001" as "Node001". The viewer matched
-only on `object.name`, so highlighting any dotted id silently matched nothing.
-Confirmed by loading the real GLB through GLTFLoader 0.180.0: `["Wheels.001"]` and
-`["Node.001"]` each matched 0 meshes. This hit highlight-both-wheels (rear missing),
-highlight-nodes-named-node (Node.001 missing), and compare-wheels. The single
-non-dotted "Wheels" case in the screenshot does resolve in isolation (and in a
-headless run), so that specific miss was almost certainly a stale bundle served
-before the new Vercel build went live; a hard refresh should show it. The dotted-name
-bug is the deterministic one worth fixing.
+Two bugs, both in the viewer, both hidden by the same coverage gap.
 
-Fix. GLTFLoader preserves the untouched glTF name on `object.userData.name`, so the
-matcher (extracted to `apps/web/src/lib/highlight.ts`) now matches both `.name` and
-`userData.name`, walking up parents. Switched the mesh test from
+Bug 1, a render-timing race (the screenshot). The highlight was applied in a
+`useEffect([scene, highlight])`. That effect only fires when the Model re-renders with
+the new command, and under load R3F does not always re-render the Canvas subtree in
+time, so the emissive swap was silently skipped and the mesh stayed dark. New
+`highlight.spec.ts` reproduced it: it passed on a fast local machine but the single
+`["Wheels"]` case failed deterministically in CI (emissive stuck at `000000`) on the
+same code. Fixed by driving the highlight from the render loop instead: Model calls
+`applyHighlight` in `useFrame`, reading the current command from a ref that the plain
+DOM `Viewer` (which always re-renders on a highlight change) keeps current. It writes
+only when a material's emissive actually differs, so the per-frame traverse is cheap.
+This is what made the screenshot intermittent.
+
+Bug 2, dot-stripped node names. three's GLTFLoader runs every node name through
+`sanitizeNodeName`, which strips `[ ] . : /`, so glTF "Wheels.001" loads as a mesh
+named "Wheels001" and "Node.001" as "Node001". The viewer matched only on
+`object.name`, so highlighting any dotted id silently matched nothing (confirmed by
+loading the real GLB through GLTFLoader 0.180.0: `["Wheels.001"]` and `["Node.001"]`
+each matched 0 meshes). This hit highlight-both-wheels (rear missing),
+highlight-nodes-named-node, and compare-wheels. Fixed by also matching the original
+glTF name that GLTFLoader preserves on `object.userData.name` (matcher extracted to
+`apps/web/src/lib/highlight.ts`, walking up parents), and switching the mesh test from
 `instanceof THREE.Mesh` to the `.isMesh` flag so a bundler resolving a second copy of
-three cannot silently drop every match. Verified against all three catalog GLBs: every
-node id the server can emit resolves to at least one mesh (`["Wheels.001"]` -> 1,
-both wheels -> 2, truck root -> 5, helmet node -> 1).
+three cannot drop every match. Verified against all three catalog GLBs: every node id
+the server can emit resolves to at least one mesh (`["Wheels.001"]` -> 1, both wheels
+-> 2, truck root -> 5, helmet node -> 1).
 
-Coverage (the gap that hid this). The e2e proved the SSE text and trace but never
+Ruled out the agent first. Reproduced against the deployed service three times: it
+deterministically calls load_model, find_elements, then highlight_elements and emits
+`{type:highlight, nodeIds:["Wheels"], color:#ffcc00, exclusive:true}` every run, at
+2612 input tokens, matching the screenshot's trace exactly. So the command was
+emitted; the "narrated but never called the tool" theory is wrong. Cost ~0.20 across
+the three repro turns (no eval run).
+
+Coverage (the gap that hid both). The e2e proved the SSE text and trace but never
 checked that a highlight changed a mesh, so a broken viewer passed CI. New
 `highlight.spec.ts` reads emissive off the live three.js scene (exposed on a
 test-only `window.__modelsenseScene` seam, opt-in via `__MODELSENSE_TEST` set before
 load) and asserts the Wheels mesh and the dot-stripped Wheels001 rear mesh both go
-`#ffcc00`. That is the assertion that would have caught the dotted-name bug.
+`#ffcc00`. That is the assertion that surfaced both bugs (the race showed up as the
+`["Wheels"]` case failing in CI but passing locally).
 
 ## 2026-07-10 - Full audit and remediation pass
 
