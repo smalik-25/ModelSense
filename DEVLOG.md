@@ -14,19 +14,21 @@ deterministically calls load_model, find_elements, then highlight_elements and e
 emitted; the "narrated but never called the tool" theory is wrong. Cost ~0.20 across
 the three repro turns (no eval run).
 
-Two bugs, both in the viewer, both hidden by the same coverage gap.
+Two bugs in the viewer, both hidden by the same coverage gap.
 
-Bug 1, a render-timing race (the screenshot). The highlight was applied in a
-`useEffect([scene, highlight])`. That effect only fires when the Model re-renders with
-the new command, and under load R3F does not always re-render the Canvas subtree in
-time, so the emissive swap was silently skipped and the mesh stayed dark. New
-`highlight.spec.ts` reproduced it: it passed on a fast local machine but the single
-`["Wheels"]` case failed deterministically in CI (emissive stuck at `000000`) on the
-same code. Fixed by driving the highlight from the render loop instead: Model calls
-`applyHighlight` in `useFrame`, reading the current command from a ref that the plain
-DOM `Viewer` (which always re-renders on a highlight change) keeps current. It writes
-only when a material's emissive actually differs, so the per-frame traverse is cheap.
-This is what made the screenshot intermittent.
+Bug 1, a shared material reset (the screenshot). The truck's two wheel nodes are
+instances of the same glTF mesh, so in three.js `Wheels` and `Wheels001` end up with
+the same material instance. The highlight logic iterated per mesh but mutated
+materials, so highlighting `["Wheels"]` set the shared material to `#ffcc00` on the
+`Wheels` mesh, then the `else` branch reset that same material back to black when the
+traverse reached the non-targeted `Wheels001`, so both wheels ended dark. Deterministic,
+not a race: a first attempt that treated it as a re-render race (moving the swap into
+`useFrame`) produced the identical failure. `highlight.spec.ts` pinned it down:
+`["Wheels"]` failed but `["Wheels","Wheels.001"]` passed, because with both instances
+matched nothing resets the shared material. Fixed by deciding per material: collect the
+materials any matched mesh uses, then set those to `#ffcc00` and the rest back to their
+stored original emissive, in one pass. Highlighting one wheel now lights both instances,
+which is the honest result when the geometry shares a material.
 
 Bug 2, dot-stripped node names. three's GLTFLoader runs every node name through
 `sanitizeNodeName`, which strips `[ ] . : /`, so glTF "Wheels.001" loads as a mesh
@@ -39,23 +41,15 @@ glTF name that GLTFLoader preserves on `object.userData.name` (matcher extracted
 `apps/web/src/lib/highlight.ts`, walking up parents), and switching the mesh test from
 `instanceof THREE.Mesh` to the `.isMesh` flag so a bundler resolving a second copy of
 three cannot drop every match. Verified against all three catalog GLBs: every node id
-the server can emit resolves to at least one mesh (`["Wheels.001"]` -> 1, both wheels
--> 2, truck root -> 5, helmet node -> 1).
-
-Ruled out the agent first. Reproduced against the deployed service three times: it
-deterministically calls load_model, find_elements, then highlight_elements and emits
-`{type:highlight, nodeIds:["Wheels"], color:#ffcc00, exclusive:true}` every run, at
-2612 input tokens, matching the screenshot's trace exactly. So the command was
-emitted; the "narrated but never called the tool" theory is wrong. Cost ~0.20 across
-the three repro turns (no eval run).
+the server can emit resolves to at least one mesh.
 
 Coverage (the gap that hid both). The e2e proved the SSE text and trace but never
 checked that a highlight changed a mesh, so a broken viewer passed CI. New
 `highlight.spec.ts` reads emissive off the live three.js scene (exposed on a
 test-only `window.__modelsenseScene` seam, opt-in via `__MODELSENSE_TEST` set before
 load) and asserts the Wheels mesh and the dot-stripped Wheels001 rear mesh both go
-`#ffcc00`. That is the assertion that surfaced both bugs (the race showed up as the
-`["Wheels"]` case failing in CI but passing locally).
+`#ffcc00`. It caught both bugs: Bug 1 showed up as `["Wheels"]` failing in CI while the
+both-wheels case passed.
 
 ## 2026-07-10 - Full audit and remediation pass
 

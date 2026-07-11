@@ -1,5 +1,4 @@
 import { Suspense, useEffect, useRef } from 'react';
-import type { RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bounds, Html, Line, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -16,19 +15,22 @@ function isStandardMaterial(
 }
 
 /**
- * Apply (or clear) the emissive highlight across the scene. Driven from the
- * render loop rather than a `useEffect([scene, highlight])`: an effect only
- * fires when the Model re-renders with a new command, and under load R3F does
- * not always re-render the Canvas subtree in time, so the swap was silently
- * missed and the mesh stayed un-highlighted (the reported bug). Reading the
- * current command from a ref each frame is immune to that. It only writes when a
- * material's emissive actually differs, so the per-frame traverse stays cheap on
- * these small scenes.
+ * Apply (or clear) the emissive highlight across the scene, deciding per material
+ * rather than per mesh. Instanced glTF nodes share one material: the milk truck's
+ * two wheel nodes reference the same mesh, so `Wheels` and `Wheels001` end up with
+ * the same material instance. Iterating per mesh, the `else` branch on a
+ * non-targeted instance reset the shared material that a targeted instance had
+ * just highlighted, so highlighting one wheel left both black (the reported bug).
+ * So first collect the set of materials any matched mesh uses, then apply once per
+ * material: a material is highlighted if any mesh that uses it is targeted.
  */
 function applyHighlight(scene: THREE.Object3D, highlight: HighlightCommand | null): void {
   const targets = new Set(highlight?.nodeIds ?? []);
   highlightColor.set(highlight?.color ?? '#ffcc00');
   const wantHex = highlightColor.getHex();
+
+  const seen = new Set<THREE.MeshStandardMaterial>();
+  const targeted = new Set<THREE.MeshStandardMaterial>();
   scene.traverse((obj) => {
     // Duck-type on `.isMesh` instead of `instanceof THREE.Mesh` so the match
     // survives a bundler resolving a second copy of three.
@@ -36,28 +38,25 @@ function applyHighlight(scene: THREE.Object3D, highlight: HighlightCommand | nul
     const mat = (obj as THREE.Mesh).material;
     if (!isStandardMaterial(mat)) return;
     if (!originalEmissive.has(mat)) originalEmissive.set(mat, mat.emissive.getHex());
-
-    if (targets.size > 0 && objectMatchesTargets(obj, targets)) {
-      if (mat.emissive.getHex() !== wantHex) {
-        mat.emissive.setHex(wantHex);
-        mat.emissiveIntensity = 1;
-      }
-    } else {
-      const orig = originalEmissive.get(mat) ?? 0x000000;
-      if (mat.emissive.getHex() !== orig) mat.emissive.setHex(orig);
-    }
+    seen.add(mat);
+    if (targets.size > 0 && objectMatchesTargets(obj, targets)) targeted.add(mat);
   });
+
+  for (const mat of seen) {
+    if (targeted.has(mat)) {
+      mat.emissive.setHex(wantHex);
+      mat.emissiveIntensity = 1;
+    } else {
+      mat.emissive.setHex(originalEmissive.get(mat) ?? 0x000000);
+    }
+  }
 }
 
-function Model({
-  url,
-  highlightRef,
-}: {
-  url: string;
-  highlightRef: RefObject<HighlightCommand | null>;
-}) {
+function Model({ url, highlight }: { url: string; highlight: HighlightCommand | null }) {
   const { scene } = useGLTF(url);
-  useFrame(() => applyHighlight(scene, highlightRef.current));
+  useEffect(() => {
+    applyHighlight(scene, highlight);
+  }, [scene, highlight]);
   return <primitive object={scene} />;
 }
 
@@ -134,12 +133,6 @@ export function Viewer({
   camera: CameraFocusCommand | null;
   measurement: MeasurementCommand | null;
 }) {
-  // Feed the highlight into the render loop through a ref. Viewer is a plain DOM
-  // component that re-renders whenever the highlight state changes, so this ref
-  // is always current, and Model's useFrame reads it even if R3F skips a
-  // re-render of the Canvas subtree.
-  const highlightRef = useRef(highlight);
-  highlightRef.current = highlight;
   return (
     <Canvas
       camera={{ position: [3, 2, 4], fov: 45 }}
@@ -162,7 +155,7 @@ export function Viewer({
       <directionalLight position={[-5, -2, -5]} intensity={0.4} />
       <Suspense fallback={<LoadingFallback />}>
         <Bounds fit clip observe margin={1.2}>
-          <Model key={url} url={url} highlightRef={highlightRef} />
+          <Model key={url} url={url} highlight={highlight} />
         </Bounds>
         <MeasurementOverlay measurement={measurement} />
       </Suspense>
