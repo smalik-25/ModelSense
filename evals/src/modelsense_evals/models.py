@@ -39,6 +39,7 @@ class Assertion(BaseModel):
     model_config = ConfigDict(extra="forbid")
     kind: Literal[
         "answer_contains_number",
+        "answer_contains_dimension",
         "answer_contains_text",
         "answer_matches",
         "scene_command",
@@ -48,6 +49,7 @@ class Assertion(BaseModel):
         "tool_output",
         "tool_called",
         "tool_not_called",
+        "tool_input_absent",
         "gated_denied",
         "gated_approved",
         "refusal",
@@ -62,7 +64,9 @@ class Assertion(BaseModel):
     # measurement_value: when node_b is set, the target is the center-to-center
     # distance between node and node_b; otherwise node's bbox diagonal.
     node_b: str | None = None
-    # tool_output
+    # answer_contains_dimension: which bbox axis extent the answer must state.
+    axis: Literal["x", "y", "z"] | None = None
+    # tool_output / tool_input_absent
     tool: str | None = None
     path: str | None = None
 
@@ -130,6 +134,10 @@ class Trajectory(BaseModel):
     final_text: str = ""
     usage: Usage = Field(default_factory=Usage)
     error: str | None = None
+    # Persisted judge score (0-1) from a live judged run, so `evals score` can
+    # reproduce context fidelity offline without calling the API. None when the run
+    # was not judged.
+    context_fidelity: float | None = None
 
 
 # --- scoring ---------------------------------------------------------------

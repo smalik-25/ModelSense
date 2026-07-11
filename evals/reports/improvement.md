@@ -39,6 +39,12 @@ Re-ran the measurement category; the full committed fixture set now scores:
 
 Report: [improved.md](improved.md).
 
+Provenance: only completion and tool-selection were re-measured in the improved run
+(the change was prompt-only and affected the measurement category). Context
+fidelity, latency, and cost are carried from the baseline run, not re-judged. A
+single full judged 50-task run would let every headline number trace to one
+committed artifact; that is the recommended next live run.
+
 ## Takeaway
 
 | Metric | Before | After |

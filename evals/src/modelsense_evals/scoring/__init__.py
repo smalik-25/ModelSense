@@ -33,5 +33,8 @@ def score_all(
                 score.notes.append(f"judge: {reason}")
             except Exception as exc:  # noqa: BLE001 - judge failure must not abort scoring
                 score.notes.append(f"judge unavailable: {exc}")
+        elif traj.context_fidelity is not None:
+            # Reproduce fidelity offline from a persisted judged run (no API call).
+            score.context_fidelity = round(traj.context_fidelity, 3)
         scores.append(score)
     return scores

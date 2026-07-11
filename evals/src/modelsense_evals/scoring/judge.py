@@ -2,9 +2,11 @@
 supported by the tool outputs, with no invented numbers?
 
 This is the ONE dimension deterministic checks cannot capture. It runs only on
-live runs (needs the Anthropic API) and only for tasks flagged `judge: true`.
-Recorded fixtures store the score so CI never calls the API. Model: Haiku, per
-the project cost policy.
+live runs (needs the Anthropic API) and only for tasks flagged `judge: true`. The
+CI gate runs the deterministic scorers only (run_judge=False), so it never calls
+the API; a judged run may persist its per-task score into the trajectory
+(`Trajectory.context_fidelity`), which `evals score` reuses to reproduce fidelity
+offline. Model: Haiku, per the project cost policy.
 """
 
 from __future__ import annotations

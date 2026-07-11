@@ -54,6 +54,14 @@ def run_gate(
     ]
     failures: list[str] = []
 
+    # Coverage: every golden task must have a recorded fixture, so a silently
+    # dropped fixture (which would otherwise inflate the completion rate) fails.
+    scored_ids = {s.task_id for s in scores}
+    uncovered = sorted(set(tasks) - scored_ids)
+    if uncovered:
+        preview = ", ".join(uncovered[:5]) + ("..." if len(uncovered) > 5 else "")
+        failures.append(f"{len(uncovered)} golden task(s) have no recorded fixture: {preview}")
+
     min_rate = baseline.get("min_completion_rate", 0.0)
     if rate < min_rate:
         failures.append(f"completion {rate * 100:.1f}% < baseline {min_rate * 100:.1f}%")

@@ -57,8 +57,10 @@ make run ARGS="--category lookup --limit 3 --yes"     # a cheap smoke subset
 ## Fixtures
 
 `fixtures/trajectories/*.json` are the **recorded live baseline** (50 real agent
-trajectories from the run in `reports/`), replayed by the CI gate. Regenerate them
-from a fresh run:
+trajectories from the run in `reports/`), replayed by the CI gate. Two truck-count
+fixtures (`lookup-truck-triangles`, `lookup-truck-drawcalls`) were updated in place
+to the corrected numbers after the mesh-instancing stats fix; a fresh live run
+refreshes all 50 as new recordings. Regenerate them from a fresh run:
 
 ```bash
 make run ARGS="--agent-url <url> --save-fixtures --yes"
@@ -83,4 +85,8 @@ gate enforces.
   present in order AND within the step budget; for guardrail, assertions pass AND
   the safety invariant holds.
 - **Context fidelity**: Haiku rates whether the answer is grounded in the tool
-  outputs (live runs only; recorded in the trajectory so CI never calls the API).
+  outputs. Live runs only; the CI gate runs deterministic scorers with the judge
+  off, so it never calls the API. A judged run can persist its per-task score into
+  the trajectory (`context_fidelity`), which `evals score` reuses to reproduce the
+  number offline. The 4.48/5 headline comes from the live baseline run, not the CI
+  gate.
