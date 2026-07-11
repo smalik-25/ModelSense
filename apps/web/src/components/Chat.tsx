@@ -1,7 +1,7 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { SceneCommand } from '@modelsense/shared';
-import { approve, streamChat } from '../lib/agentClient';
-import type { AgentEvent } from '../lib/agentClient';
+import { approve, streamChat, AgentTimeoutError, StreamEndedError } from '../lib/agentClient';
+import type { AgentEvent, ChatTurn } from '../lib/agentClient';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -28,6 +28,25 @@ const EXAMPLES = [
   'Export a report of this scene.',
 ];
 
+// The hosted demo runs on a Render free instance that cold-starts (~30-60s) and can
+// pause to restart under sustained load; map its transient failures to one calm note.
+const COLD_START =
+  'The server is waking up (free-tier cold start, up to ~60s). Please try again in a moment.';
+
+function describeError(err: unknown): string {
+  if (err instanceof AgentTimeoutError) return COLD_START;
+  if (err instanceof StreamEndedError)
+    return 'The agent stopped responding before finishing. Please try again.';
+  const msg = err instanceof Error ? err.message : 'Request failed';
+  if (/\b(429|500|502|503|504)\b/.test(msg)) return COLD_START;
+  if (/fetch|network|load failed/i.test(msg)) return COLD_START;
+  return msg;
+}
+
+// Forward a bounded window of prior turns so follow-ups ("focus on them") resolve,
+// without growing the free-tier process memory unbounded.
+const HISTORY_LIMIT = 12;
+
 const shortTool = (name: string) => name.replace('mcp__modelsense__', '');
 
 export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: SceneCommand) => void }) {
@@ -35,10 +54,18 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
   const [input, setInput] = useState('');
   const [tools, setTools] = useState<string[]>([]);
   const [approval, setApproval] = useState<Approval | null>(null);
+  const [deciding, setDeciding] = useState(false);
   const [trace, setTrace] = useState<Trace | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [warming, setWarming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const endRef = useRef<HTMLDivElement | null>(null);
+
+  // Keep the newest message / card in view as content streams in.
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'end' });
+  }, [messages, tools, approval, trace, error]);
 
   const appendAssistant = (delta: string) =>
     setMessages((prev) => {
@@ -71,36 +98,61 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
     setTrace(null);
     setTools([]);
     setApproval(null);
+    const history: ChatTurn[] = messages
+      .slice(-HISTORY_LIMIT)
+      .filter((m) => m.text.trim().length > 0)
+      .map((m) => ({ role: m.role, text: m.text }));
     setMessages((p) => [...p, { role: 'user', text }, { role: 'assistant', text: '' }]);
     setInput('');
     setBusy(true);
+    setWarming(false);
     const ac = new AbortController();
     abortRef.current = ac;
+    // Flip to a "waking up" hint if the first byte is slow (a cold start).
+    const warmTimer = setTimeout(() => setWarming(true), 3500);
+    const stopWarming = () => {
+      clearTimeout(warmTimer);
+      setWarming(false);
+    };
     try {
-      await streamChat({ message: text, modelId }, onEvent, ac.signal);
+      await streamChat({ message: text, modelId, history }, (e) => {
+        if (e.t === 'text' || e.t === 'tool' || e.t === 'scene' || e.t === 'approval') stopWarming();
+        onEvent(e);
+      }, ac.signal);
     } catch (err) {
       if (!ac.signal.aborted) {
-        const msg = err instanceof Error ? err.message : 'Request failed';
-        setError(
-          /fetch/i.test(msg)
-            ? 'Could not reach the agent. The server may be waking up (free-tier cold start, ~30-60s). Please try again.'
-            : msg,
-        );
+        setError(describeError(err));
+        // Drop the trailing empty assistant bubble so a failure never shows as a blank reply.
+        setMessages((p) => {
+          const last = p[p.length - 1];
+          return last && last.role === 'assistant' && !last.text ? p.slice(0, -1) : p;
+        });
       }
     } finally {
+      stopWarming();
       setBusy(false);
+      abortRef.current = null;
     }
   };
 
+  const stop = () => abortRef.current?.abort();
+
   const decide = async (approved: boolean) => {
-    if (!approval) return;
-    await approve(approval.id, approved);
-    setApproval(null);
+    if (!approval || deciding) return;
+    setDeciding(true);
+    try {
+      await approve(approval.id, approved);
+      setApproval(null);
+    } catch {
+      setError('Could not send your decision. Please try again.');
+    } finally {
+      setDeciding(false);
+    }
   };
 
   return (
     <section className="chat" data-testid="chat">
-      <div className="messages">
+      <div className="messages" aria-live="polite">
         {messages.length === 0 && (
           <div className="examples">
             <p className="muted">Ask about the model:</p>
@@ -113,7 +165,16 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
         )}
         {messages.map((m, i) => (
           <div key={i} className={`msg ${m.role}`} data-testid={`msg-${m.role}`}>
-            {m.text || (busy && i === messages.length - 1 ? <span className="dots">…</span> : '')}
+            {m.text ||
+              (busy && i === messages.length - 1 ? (
+                warming ? (
+                  <span className="muted">Waking the free-tier server (up to ~60s)…</span>
+                ) : (
+                  <span className="dots">…</span>
+                )
+              ) : (
+                ''
+              ))}
           </div>
         ))}
 
@@ -133,18 +194,25 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
             <div className="muted">
               The agent wants to run <code>{approval.tool}</code>.
             </div>
+            {approval.input != null && (
+              <pre className="approval-input">{JSON.stringify(approval.input, null, 2)}</pre>
+            )}
             <div className="row">
-              <button type="button" onClick={() => decide(true)}>
+              <button type="button" disabled={deciding} onClick={() => decide(true)}>
                 Approve
               </button>
-              <button type="button" className="ghost" onClick={() => decide(false)}>
+              <button type="button" className="ghost" disabled={deciding} onClick={() => decide(false)}>
                 Reject
               </button>
             </div>
           </div>
         )}
 
-        {error && <div className="error">Error: {error}</div>}
+        {error && (
+          <div className="error" role="alert">
+            Error: {error}
+          </div>
+        )}
 
         {trace && (
           <div className="trace" data-testid="trace">
@@ -161,6 +229,7 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
             )}
           </div>
         )}
+        <div ref={endRef} />
       </div>
 
       <form
@@ -172,14 +241,21 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
       >
         <input
           data-testid="chat-input"
+          aria-label="Ask about the model"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={busy ? 'Working…' : 'Ask about the model'}
           disabled={busy}
         />
-        <button type="submit" disabled={busy || !input.trim()}>
-          Send
-        </button>
+        {busy ? (
+          <button type="button" className="ghost" onClick={stop}>
+            Stop
+          </button>
+        ) : (
+          <button type="submit" disabled={!input.trim()}>
+            Send
+          </button>
+        )}
       </form>
     </section>
   );

@@ -28,41 +28,102 @@ export type AgentEvent =
 // relative POST that would hit the static host.
 const AGENT_URL = import.meta.env.VITE_AGENT_URL || 'http://localhost:8787';
 
+/** One prior chat turn forwarded so the agent can resolve follow-up references. */
+export interface ChatTurn {
+  role: 'user' | 'assistant';
+  text: string;
+}
+
+/**
+ * Abort if the stream produces no bytes for this long. Generous enough to cover a
+ * Render free-tier cold start (~30-60s before the first byte) and the server's 15s
+ * heartbeats, but bounded so an OOM'd/hung backend does not wedge the UI forever.
+ */
+const STALL_TIMEOUT_MS = 75_000;
+
+/** Thrown when the stream stalls; Chat maps it to a friendly cold-start message. */
+export class AgentTimeoutError extends Error {}
+/** Thrown when the stream closes before the agent signalled completion. */
+export class StreamEndedError extends Error {}
+
 /**
  * Stream a chat turn. EventSource cannot POST, so we read the SSE body from a
- * fetch stream and parse `data:` frames ourselves.
+ * fetch stream and parse `data:` frames ourselves. Guards against two live-demo
+ * failure modes: a stalled/hung backend (stall watchdog) and a connection that
+ * closes mid-turn without a terminal frame (treated as an error, not success).
  */
 export async function streamChat(
-  body: { message: string; modelId: string },
+  body: { message: string; modelId: string; history?: ChatTurn[] },
   onEvent: (event: AgentEvent) => void,
   signal: AbortSignal,
 ): Promise<void> {
-  const res = await fetch(`${AGENT_URL}/chat`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-    signal,
-  });
-  if (!res.ok || !res.body) throw new Error(`Agent error ${res.status}`);
+  // One controller chains the caller's signal with our stall watchdog.
+  const ctrl = new AbortController();
+  const onAbort = () => ctrl.abort();
+  signal.addEventListener('abort', onAbort);
+  let timedOut = false;
+  let stall: ReturnType<typeof setTimeout> | undefined;
+  const armStall = () => {
+    if (stall) clearTimeout(stall);
+    stall = setTimeout(() => {
+      timedOut = true;
+      ctrl.abort();
+    }, STALL_TIMEOUT_MS);
+  };
 
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const frames = buffer.split('\n\n');
-    buffer = frames.pop() ?? '';
-    for (const frame of frames) {
-      const dataLine = frame.split('\n').find((l) => l.startsWith('data: '));
-      if (!dataLine) continue;
+  try {
+    armStall();
+    let res: Response;
+    try {
+      res = await fetch(`${AGENT_URL}/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: ctrl.signal,
+      });
+    } catch (err) {
+      if (timedOut) throw new AgentTimeoutError('The agent did not respond in time.');
+      throw err;
+    }
+    if (!res.ok || !res.body) throw new Error(`Agent error ${res.status}`);
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let sawTerminal = false;
+    for (;;) {
+      let chunk: ReadableStreamReadResult<Uint8Array>;
       try {
-        onEvent(JSON.parse(dataLine.slice(6)) as AgentEvent);
-      } catch {
-        // heartbeat / end frame; ignore
+        chunk = await reader.read();
+      } catch (err) {
+        if (timedOut) throw new AgentTimeoutError('The agent stopped responding.');
+        throw err;
+      }
+      if (chunk.done) break;
+      armStall();
+      buffer += decoder.decode(chunk.value, { stream: true });
+      const frames = buffer.split('\n\n');
+      buffer = frames.pop() ?? '';
+      for (const frame of frames) {
+        const dataLine = frame.split('\n').find((l) => l.startsWith('data: '));
+        if (!dataLine) continue;
+        try {
+          const event = JSON.parse(dataLine.slice(6)) as AgentEvent;
+          if (event.t === 'done' || event.t === 'error') sawTerminal = true;
+          onEvent(event);
+        } catch {
+          // heartbeat / end frame; ignore
+        }
       }
     }
+    // A clean close with no 'done'/'error' frame means the turn was truncated
+    // (e.g. the backend OOM'd mid-stream); surface it instead of a silent bubble.
+    if (!sawTerminal && !signal.aborted) {
+      throw new StreamEndedError('The agent stopped responding before finishing.');
+    }
+  } finally {
+    if (stall) clearTimeout(stall);
+    signal.removeEventListener('abort', onAbort);
   }
 }
 

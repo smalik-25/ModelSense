@@ -30,11 +30,41 @@ body {
   display: grid;
   grid-template-columns: 1fr 340px;
   height: 100vh;
+  /* dvh avoids the iOS Safari address-bar overflow. */
+  height: 100dvh;
 }
 
 .canvas-pane {
   position: relative;
   min-width: 0;
+}
+
+/* Stack the viewer over the chat on narrow screens so neither collapses. */
+@media (max-width: 760px) {
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 45vh 1fr;
+  }
+  .side-pane {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}
+
+.canvas-loading,
+.viewer-fallback {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.viewer-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  text-align: center;
 }
 
 .badge {
@@ -85,19 +115,6 @@ select {
   font-size: 14px;
 }
 
-.dev-panel h2 {
-  margin: 0 0 4px;
-  font-size: 15px;
-}
-
-.dev-panel code {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-size: 12px;
-}
-
 .row {
   display: flex;
   gap: 8px;
@@ -124,17 +141,6 @@ button.ghost {
   background: transparent;
   color: var(--text);
   border: 1px solid var(--border);
-}
-
-pre.cmd {
-  margin-top: 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 12px;
-  overflow-x: auto;
-  color: var(--muted);
 }
 
 /* Layout: let the chat own the scroll area */
@@ -226,6 +232,16 @@ pre.cmd {
   font-weight: 600;
   font-size: 13px;
   margin-bottom: 4px;
+}
+.approval-input {
+  margin: 8px 0 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 11px;
+  overflow-x: auto;
+  color: var(--muted);
 }
 .approval .row {
   margin-top: 10px;

@@ -7,15 +7,22 @@ import type {
 } from '@modelsense/shared';
 import { Viewer } from './components/Viewer';
 import { Chat } from './components/Chat';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { wakeAgent } from './lib/agentClient';
 import { WEB_CATALOG } from './catalog';
 
 const DEFAULT_MODEL = WEB_CATALOG[0]!;
 
 export function App() {
-  // Wake the Render free-tier service on load so the first chat is not a cold start.
+  // Wake the Render free-tier service on load, and again when the tab regains
+  // focus, so a chat after the 15-min idle spin-down is not a cold start.
   useEffect(() => {
     wakeAgent();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') wakeAgent();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
 
   const [modelId, setModelId] = useState(DEFAULT_MODEL.id);
@@ -25,7 +32,14 @@ export function App() {
   const model = WEB_CATALOG.find((m) => m.id === modelId) ?? DEFAULT_MODEL;
 
   const onScene = (cmd: SceneCommand) => {
-    if (cmd.type === 'highlight') setHighlight(cmd);
+    if (cmd.type === 'highlight')
+      // exclusive replaces; otherwise add to the currently highlighted set (honors
+      // the schema's exclusive flag instead of always replacing).
+      setHighlight((prev) =>
+        cmd.exclusive || !prev
+          ? cmd
+          : { ...cmd, nodeIds: Array.from(new Set([...prev.nodeIds, ...cmd.nodeIds])) },
+      );
     else if (cmd.type === 'camera_focus') setCamera(cmd);
     else if (cmd.type === 'measurement') setMeasurement(cmd);
   };
@@ -39,7 +53,11 @@ export function App() {
   return (
     <div className="app">
       <div className="canvas-pane">
-        <Viewer url={model.url} highlight={highlight} camera={camera} measurement={measurement} />
+        <ErrorBoundary
+          fallback={<div className="viewer-fallback">Could not load the 3D view in this browser.</div>}
+        >
+          <Viewer url={model.url} highlight={highlight} camera={camera} measurement={measurement} />
+        </ErrorBoundary>
         <div className="badge">ModelSense</div>
       </div>
       <aside className="side-pane">

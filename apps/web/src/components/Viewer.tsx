@@ -81,6 +81,14 @@ function CameraRig({ command }: { command: CameraFocusCommand | null }) {
   return null;
 }
 
+function LoadingFallback() {
+  return (
+    <Html center>
+      <div className="canvas-loading">Loading model…</div>
+    </Html>
+  );
+}
+
 function MeasurementOverlay({ measurement }: { measurement: MeasurementCommand | null }) {
   if (!measurement || measurement.points.length < 2) return null;
   const pts = measurement.points.map((p) => [p[0], p[1], p[2]] as [number, number, number]);
@@ -117,7 +125,7 @@ export function Viewer({
       <ambientLight intensity={0.5} />
       <directionalLight position={[5, 8, 5]} intensity={1.4} />
       <directionalLight position={[-5, -2, -5]} intensity={0.4} />
-      <Suspense fallback={null}>
+      <Suspense fallback={<LoadingFallback />}>
         <Bounds fit clip observe margin={1.2}>
           <Model key={url} url={url} highlight={highlight} />
         </Bounds>
