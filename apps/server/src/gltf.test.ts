@@ -27,6 +27,17 @@ describe('catalog', () => {
     expect(isAllowedModelUrl('https://evil.example.com/x.glb')).toBe(false);
     expect(isAllowedModelUrl(`${base}/Box/README.md`)).toBe(false);
     expect(isAllowedModelUrl('not a url')).toBe(false);
+    // Allowlist segment must be anchored, not merely present in the path: an
+    // attacker-owned repo cannot smuggle it as a later path segment.
+    expect(
+      isAllowedModelUrl(
+        'https://raw.githubusercontent.com/attacker/repo/main/KhronosGroup/glTF-Sample-Assets/evil.glb',
+      ),
+    ).toBe(false);
+    // http (non-TLS) is rejected even on the right host/path.
+    expect(
+      isAllowedModelUrl('http://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/x.glb'),
+    ).toBe(false);
   });
 });
 

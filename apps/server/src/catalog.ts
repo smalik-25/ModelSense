@@ -56,7 +56,11 @@ export function isAllowedModelUrl(candidate: string): boolean {
     return (
       url.protocol === 'https:' &&
       ALLOWED_URL_HOSTS.has(url.hostname) &&
-      url.pathname.includes('/KhronosGroup/glTF-Sample-Assets/') &&
+      // Anchor to the start of the path: on raw.githubusercontent.com the path is
+      // /<owner>/<repo>/<ref>/..., so a substring match would let any repo whose
+      // path merely contains this segment (e.g. /attacker/repo/main/KhronosGroup/
+      // glTF-Sample-Assets/x.glb) serve an arbitrary .glb.
+      url.pathname.startsWith('/KhronosGroup/glTF-Sample-Assets/') &&
       url.pathname.endsWith('.glb')
     );
   } catch {
