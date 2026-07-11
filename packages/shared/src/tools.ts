@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { CameraFocusCommand, HighlightCommand, MeasurementCommand } from './structured-content';
+import {
+  CameraFocusCommand,
+  HighlightCommand,
+  MeasurementCommand,
+  Vec3,
+} from './structured-content';
+import { SessionId } from './session';
 
 /**
  * Zod schemas for every MCP tool's input and output. The server registers tools
@@ -57,7 +63,7 @@ export type LoadModelOutput = z.infer<typeof loadModelOutput>;
 
 // --- get_scene_stats -------------------------------------------------------
 export const getSceneStatsInput = {
-  session_id: z.string(),
+  session_id: SessionId,
   node_id: z.string().optional().describe('Restrict stats to this node.'),
 };
 export const MeshStat = z.object({
@@ -65,7 +71,9 @@ export const MeshStat = z.object({
   name: z.string(),
   vertices: z.number().int(),
   triangles: z.number().int(),
-  sizeBytes: z.number().int(),
+  // gltf-transform inspect can return null when a size is not resolvable; keep it
+  // nullable so a data quirk stays a normal result instead of a post-return McpError.
+  sizeBytes: z.number().int().nullable(),
   instances: z.number().int(),
 });
 export type MeshStat = z.infer<typeof MeshStat>;
@@ -73,7 +81,7 @@ export const TextureStat = z.object({
   name: z.string(),
   resolution: z.string(),
   mimeType: z.string(),
-  sizeBytes: z.number().int(),
+  sizeBytes: z.number().int().nullable(),
   gpuSizeBytes: z.number().int().nullable(),
 });
 export type TextureStat = z.infer<typeof TextureStat>;
@@ -93,7 +101,7 @@ export type GetSceneStatsOutput = z.infer<typeof getSceneStatsOutput>;
 
 // --- find_elements ---------------------------------------------------------
 export const findElementsInput = {
-  session_id: z.string(),
+  session_id: SessionId,
   query: z.string().describe('Case-insensitive substring matched against node names.'),
   limit: z.number().int().positive().max(200).default(25),
 };
@@ -103,8 +111,8 @@ export const ElementMatch = z.object({
   type: z.enum(['mesh', 'empty']),
   triangles: z.number().int(),
   vertices: z.number().int(),
-  bboxMin: z.array(z.number()).length(3),
-  bboxMax: z.array(z.number()).length(3),
+  bboxMin: Vec3,
+  bboxMax: Vec3,
 });
 export type ElementMatch = z.infer<typeof ElementMatch>;
 export const findElementsOutput = z.object({
@@ -115,7 +123,7 @@ export type FindElementsOutput = z.infer<typeof findElementsOutput>;
 
 // --- highlight_elements ----------------------------------------------------
 export const highlightElementsInput = {
-  session_id: z.string(),
+  session_id: SessionId,
   node_ids: z.array(z.string()).min(1),
   color: z
     .string()
@@ -129,7 +137,7 @@ export type HighlightElementsOutput = z.infer<typeof HighlightCommand>;
 
 // --- camera_focus ----------------------------------------------------------
 export const cameraFocusInput = {
-  session_id: z.string(),
+  session_id: SessionId,
   node_id: z.string().describe('Node id to frame the camera on.'),
 };
 export const cameraFocusOutput = CameraFocusCommand;
@@ -137,7 +145,7 @@ export type CameraFocusOutput = z.infer<typeof CameraFocusCommand>;
 
 // --- measure ---------------------------------------------------------------
 export const measureInput = {
-  session_id: z.string(),
+  session_id: SessionId,
   node_id: z.string().optional().describe('Measure this node bounding box.'),
   node_a: z.string().optional().describe('First node id for a distance measurement.'),
   node_b: z.string().optional().describe('Second node id for a distance measurement.'),
@@ -165,7 +173,7 @@ export const OptimizationFinding = z.object({
 export type OptimizationFinding = z.infer<typeof OptimizationFinding>;
 
 export const suggestOptimizationsInput = {
-  session_id: z.string(),
+  session_id: SessionId,
   budget_triangles: z
     .number()
     .int()
@@ -198,7 +206,7 @@ export type SuggestOptimizationsOutput = z.infer<typeof suggestOptimizationsOutp
 
 // --- export_report (gated at the agent layer via canUseTool) ---------------
 export const exportReportInput = {
-  session_id: z.string(),
+  session_id: SessionId,
   format: z.literal('markdown').default('markdown'),
 };
 export const exportReportOutput = z.object({
