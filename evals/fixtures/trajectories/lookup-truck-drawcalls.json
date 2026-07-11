@@ -20,8 +20,8 @@
           "animations": 1
         },
         "totals": {
-          "vertices": 3995,
-          "triangles": 2856
+          "vertices": 4823,
+          "triangles": 3624
         },
         "extensionsUsed": [],
         "fileSizeBytes": 369980
@@ -36,9 +36,9 @@
       "output": {
         "scope": "scene",
         "totals": {
-          "vertices": 3995,
-          "triangles": 2856,
-          "drawCallEstimate": 4,
+          "vertices": 4823,
+          "triangles": 3624,
+          "drawCallEstimate": 5,
           "materials": 4,
           "textures": 1
         },
@@ -75,7 +75,7 @@
   ],
   "scene_commands": [],
   "approvals": [],
-  "final_text": "**~4 draw calls**, driven by material/mesh grouping rather than raw node count: 2 unique meshes (Wheels, Cesium_Milk_Truck) but Wheels is instanced twice, and the truck body's 4 materials split it into separate batches. Only 1 texture (2048\u00d72048) is shared across the model, so there's no texture-swap overhead inflating the count further.",
+  "final_text": "**~5 draw calls**, driven by material/mesh grouping rather than raw node count: the Wheels mesh is instanced across 2 nodes (2 draws) and the truck body splits into 3 material batches (3 draws). Only 1 texture (2048\u00d72048) is shared across the model, so there's no texture-swap overhead inflating the count further.",
   "usage": {
     "turns": 3,
     "cost_usd": 0.10219890000000001,

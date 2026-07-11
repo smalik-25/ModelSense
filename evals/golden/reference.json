@@ -176,8 +176,8 @@
         "animations": 1
       },
       "totals": {
-        "vertices": 3995,
-        "triangles": 2856
+        "vertices": 4823,
+        "triangles": 3624
       },
       "extensionsUsed": [],
       "nodes": [
@@ -291,9 +291,9 @@
       "sceneStats": {
         "scope": "scene",
         "totals": {
-          "vertices": 3995,
-          "triangles": 2856,
-          "drawCallEstimate": 4,
+          "vertices": 4823,
+          "triangles": 3624,
+          "drawCallEstimate": 5,
           "materials": 4,
           "textures": 1
         },
@@ -327,7 +327,7 @@
       },
       "optimizations": {
         "totals": {
-          "triangles": 2856,
+          "triangles": 3624,
           "textureGpuBytes": 22369620
         },
         "budget": {
