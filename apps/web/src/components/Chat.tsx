@@ -49,7 +49,16 @@ const HISTORY_LIMIT = 12;
 
 const shortTool = (name: string) => name.replace('mcp__modelsense__', '');
 
-export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: SceneCommand) => void }) {
+export function Chat({
+  modelId,
+  onScene,
+  onBusyChange,
+}: {
+  modelId: string;
+  onScene: (cmd: SceneCommand) => void;
+  /** Notified whenever a turn starts/ends, so the shell can lock the model picker. */
+  onBusyChange?: (busy: boolean) => void;
+}) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [tools, setTools] = useState<string[]>([]);
@@ -66,6 +75,11 @@ export function Chat({ modelId, onScene }: { modelId: string; onScene: (cmd: Sce
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: 'end' });
   }, [messages, tools, approval, trace, error]);
+
+  // Surface turn-in-flight state so the shell can lock the model picker mid-turn.
+  useEffect(() => {
+    onBusyChange?.(busy);
+  }, [busy, onBusyChange]);
 
   const appendAssistant = (delta: string) =>
     setMessages((prev) => {

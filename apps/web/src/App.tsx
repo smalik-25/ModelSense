@@ -26,6 +26,10 @@ export function App() {
   }, []);
 
   const [modelId, setModelId] = useState(DEFAULT_MODEL.id);
+  // A turn is in flight. Switching models mid-turn would apply the running turn's
+  // highlight/camera commands to the newly loaded model, so the picker is locked
+  // while busy.
+  const [chatBusy, setChatBusy] = useState(false);
   const [highlight, setHighlight] = useState<HighlightCommand | null>(null);
   const [camera, setCamera] = useState<CameraFocusCommand | null>(null);
   const [measurement, setMeasurement] = useState<MeasurementCommand | null>(null);
@@ -54,6 +58,7 @@ export function App() {
     <div className="app">
       <div className="canvas-pane">
         <ErrorBoundary
+          resetKeys={[modelId]}
           fallback={<div className="viewer-fallback">Could not load the 3D view in this browser.</div>}
         >
           <Viewer url={model.url} highlight={highlight} camera={camera} measurement={measurement} />
@@ -67,6 +72,7 @@ export function App() {
             <span>Model</span>
             <select
               value={modelId}
+              disabled={chatBusy}
               onChange={(e) => {
                 setModelId(e.target.value);
                 resetScene();
@@ -80,7 +86,7 @@ export function App() {
             </select>
           </label>
         </header>
-        <Chat modelId={modelId} onScene={onScene} />
+        <Chat modelId={modelId} onScene={onScene} onBusyChange={setChatBusy} />
       </aside>
     </div>
   );
