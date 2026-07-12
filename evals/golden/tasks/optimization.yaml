@@ -146,8 +146,10 @@
       tool: suggest_optimizations
       path: totals.triangles
       ref: Box.optimizations.totals.triangles
+    # Word-boundaried so a bare substring ("no" inside "economical") cannot pass;
+    # single-quoted so YAML keeps the backslashes literal.
     - kind: answer_matches
-      value: "no|nothing|already|minimal|little|small|fine|efficient|trivial"
+      value: '\b(no|nothing|already|minimal|little|small|fine|efficient|trivial)\b'
 
 - id: opt-helmet-list-all
   category: optimization
