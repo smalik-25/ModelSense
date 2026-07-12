@@ -20,8 +20,8 @@
           "animations": 1
         },
         "totals": {
-          "vertices": 3995,
-          "triangles": 2856
+          "vertices": 4823,
+          "triangles": 3624
         },
         "extensionsUsed": [],
         "fileSizeBytes": 369980
@@ -35,7 +35,7 @@
       },
       "output": {
         "totals": {
-          "triangles": 2856,
+          "triangles": 3624,
           "textureGpuBytes": 22369620
         },
         "budget": {

@@ -20,8 +20,8 @@
           "animations": 1
         },
         "totals": {
-          "vertices": 3995,
-          "triangles": 2856
+          "vertices": 4823,
+          "triangles": 3624
         },
         "extensionsUsed": [],
         "fileSizeBytes": 369980
@@ -175,7 +175,7 @@
     }
   ],
   "approvals": [],
-  "final_text": "The **Cesium_Milk_Truck** mesh (the truck body) has the most triangles: **2,088** out of 2,856 total in the scene (about 73%). It's highlighted in the viewer now. The two wheel meshes trail far behind at 768 triangles each.",
+  "final_text": "The **Cesium_Milk_Truck** mesh (the truck body) has the most triangles: **2,088** out of 3,624 total in the scene (about 58%). It's highlighted in the viewer now. The two wheel meshes trail far behind at 768 triangles each.",
   "usage": {
     "turns": 4,
     "cost_usd": 0.1404243,

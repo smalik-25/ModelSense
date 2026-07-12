@@ -20,8 +20,8 @@
           "animations": 1
         },
         "totals": {
-          "vertices": 3995,
-          "triangles": 2856
+          "vertices": 4823,
+          "triangles": 3624
         },
         "extensionsUsed": [],
         "fileSizeBytes": 369980
@@ -31,7 +31,7 @@
   ],
   "scene_commands": [],
   "approvals": [],
-  "final_text": "The CesiumMilkTruck model contains **2 meshes** (across 6 nodes, 4 materials), totaling 3,995 vertices and 2,856 triangles.",
+  "final_text": "The CesiumMilkTruck model contains **2 meshes** (across 6 nodes, 4 materials), totaling 4,823 vertices and 3,624 triangles.",
   "usage": {
     "turns": 2,
     "cost_usd": 0.0791192,

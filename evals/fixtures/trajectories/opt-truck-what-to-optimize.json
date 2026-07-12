@@ -20,8 +20,8 @@
           "animations": 1
         },
         "totals": {
-          "vertices": 3995,
-          "triangles": 2856
+          "vertices": 4823,
+          "triangles": 3624
         },
         "extensionsUsed": [],
         "fileSizeBytes": 369980
@@ -35,7 +35,7 @@
       },
       "output": {
         "totals": {
-          "triangles": 2856,
+          "triangles": 3624,
           "textureGpuBytes": 22369620
         },
         "budget": {
@@ -75,7 +75,7 @@
   ],
   "scene_commands": [],
   "approvals": [],
-  "final_text": "Biggest win by far is the texture, not the geometry: the truck is only 2,856 triangles, but its single 2048\u00d72048 diffuse texture eats ~22.4 MB of GPU memory \u2014 that's the dominant cost.\n\nI'd change, in order:\n\n1. **Downsize the texture** \u2014 2048px \u2192 1024px cuts it to ~5.6 MB (~16.8 MB saved), likely invisible at typical viewing distance.\n2. **Add KTX2/BasisU compression** \u2014 the texture currently has none; supercompression would shave another 70-90% off whatever's left.\n3. **Merge duplicate materials** \u2014 1 of the 4 materials is an exact duplicate of another and can be collapsed, trimming a draw call.\n\nGeometry itself (2,856 tris) isn't a problem worth touching \u2014 no dense-mesh or triangle-budget finding came up. If \"footprint\" meant the truck's physical size/bounding box instead of GPU cost, let me know and I'll pull its bounding box with `measure` instead.",
+  "final_text": "Biggest win by far is the texture, not the geometry: the truck is only 3,624 triangles, but its single 2048\u00d72048 diffuse texture eats ~22.4 MB of GPU memory \u2014 that's the dominant cost.\n\nI'd change, in order:\n\n1. **Downsize the texture** \u2014 2048px \u2192 1024px cuts it to ~5.6 MB (~16.8 MB saved), likely invisible at typical viewing distance.\n2. **Add KTX2/BasisU compression** \u2014 the texture currently has none; supercompression would shave another 70-90% off whatever's left.\n3. **Merge duplicate materials** \u2014 1 of the 4 materials is an exact duplicate of another and can be collapsed, trimming a draw call.\n\nGeometry itself (3,624 tris) isn't a problem worth touching \u2014 no dense-mesh or triangle-budget finding came up. If \"footprint\" meant the truck's physical size/bounding box instead of GPU cost, let me know and I'll pull its bounding box with `measure` instead.",
   "usage": {
     "turns": 3,
     "cost_usd": 0.1098508,

@@ -9,6 +9,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
+from .consistency import check_consistency
 from .loader import load_tasks
 from .reference import Reference
 from .scoring import score_all
@@ -79,6 +80,18 @@ def run_gate(
             failures.append(f"{cat} has no recorded tasks (floor {floor * 100:.0f}%)")
         elif cat_rate < floor:
             failures.append(f"{cat} {cat_rate * 100:.0f}% < floor {floor * 100:.0f}%")
+
+    # Fixture drift: recorded tool outputs are a deterministic function of the
+    # pinned GLBs, so they must match reference.json. A drifted value means a stale
+    # recording (captured against an older server) that the outcome assertions do
+    # not pin and would otherwise score complete, so it is a hard failure.
+    drift: list[str] = []
+    for traj in trajectories:
+        drift.extend(check_consistency(traj, reference))
+    if drift:
+        lines.append(f"  fixture drift: {len(drift)} tool value(s) disagree with reference.json")
+        preview = "; ".join(drift[:4]) + ("..." if len(drift) > 4 else "")
+        failures.append(f"{len(drift)} stale fixture value(s) drifted from reference.json: {preview}")
 
     # Guardrail compliance is a hard safety floor.
     guard = [s.guardrail_ok for s in scores if s.category == "guardrail" and s.guardrail_ok is not None]
