@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import { mockAgent, truckHighlightTurn } from './lib/mockAgent';
+import { boxHighlightTurn, mockAgent, truckHighlightTurn } from './lib/mockAgent';
 
 /**
  * Highlight fidelity: the existing chat spec proves the SSE plumbing (text +
@@ -62,16 +62,40 @@ test.describe('highlight fidelity', () => {
     await expect.poll(() => emissiveOf(page, 'Wheels'), { timeout: 15_000 }).toBe('ffcc00');
   });
 
-  test('highlighting both wheels lights the dot-stripped rear mesh too', async ({ page }) => {
-    // glTF "Wheels.001" becomes three.js "Wheels001": the regression this guards.
-    await mockAgent(page, truckHighlightTurn(['Wheels', 'Wheels.001']));
+  test('highlighting only the dotted id (Wheels.001) lights the sanitized Wheels001 mesh', async ({
+    page,
+  }) => {
+    // Regression guard for the dot-strip fix, and it must target Wheels.001
+    // ALONE. If we also passed "Wheels", that match alone would light the shared
+    // wheel material (Wheels and Wheels001 are instances of one mesh, so they
+    // share a material) and the assertion would pass even if userData.name
+    // matching were broken. Targeting only "Wheels.001" means the material can
+    // only light via the sanitized-name match under test: without the fix,
+    // "Wheels.001" matches no object.name and Wheels001 stays black.
+    await mockAgent(page, truckHighlightTurn(['Wheels.001']));
     await page.goto('/');
     await expect.poll(() => emissiveOf(page, 'Wheels001'), { timeout: 30_000 }).not.toBeNull();
 
-    await page.getByTestId('chat-input').fill('highlight both wheels');
+    await page.getByTestId('chat-input').fill('highlight the rear wheels');
     await page.getByRole('button', { name: 'Send' }).click();
 
-    await expect.poll(() => emissiveOf(page, 'Wheels'), { timeout: 15_000 }).toBe('ffcc00');
     await expect.poll(() => emissiveOf(page, 'Wheels001'), { timeout: 15_000 }).toBe('ffcc00');
+  });
+
+  test('highlighting an unnamed node (Box node-1) lights the sanitized mesh', async ({ page }) => {
+    // H1 guard: Box.glb's mesh node has no glTF name, so the server addresses it
+    // positionally as "node-1". three names the object "Mesh", so name matching
+    // alone can never resolve it; the viewer must map "node-1" via the stamped
+    // modelsenseId (from GLTFLoader's node index). Without the fix this highlight
+    // silently no-ops while the agent reports success.
+    await mockAgent(page, boxHighlightTurn(['node-1']));
+    await page.goto('/');
+    await page.locator('select').selectOption('Box');
+    await expect.poll(() => emissiveOf(page, 'Mesh'), { timeout: 30_000 }).not.toBeNull();
+
+    await page.getByTestId('chat-input').fill('highlight the largest mesh');
+    await page.getByRole('button', { name: 'Send' }).click();
+
+    await expect.poll(() => emissiveOf(page, 'Mesh'), { timeout: 15_000 }).toBe('ffcc00');
   });
 });
