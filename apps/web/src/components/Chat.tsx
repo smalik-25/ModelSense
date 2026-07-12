@@ -21,10 +21,14 @@ interface Approval {
   input: unknown;
 }
 
+// Starter prompts. The model picker offers three very different models (a vehicle,
+// a single-mesh helmet, a bare box), so these stay model-agnostic: no "wheels" or
+// other part names that only exist on one of them. Each still exercises a distinct
+// tool (find/highlight, stats, suggest_optimizations, gated export_report).
 const EXAMPLES = [
-  'Find every node with "wheel" in the name and highlight the largest one.',
+  'Highlight the largest part of this model.',
   'How many triangles and materials does this model have?',
-  'Focus the camera on the wheels.',
+  'What would you optimize to make this model lighter?',
   'Export a report of this scene.',
 ];
 

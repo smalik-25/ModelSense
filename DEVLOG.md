@@ -2,6 +2,16 @@
 
 Running log of what changed and why. Newest first.
 
+## 2026-07-12 - Model-agnostic starter prompts
+
+The four chat example prompts were written for the Cesium Milk Truck ("Find every
+node with 'wheel' in the name and highlight the largest one", "Focus the camera on
+the wheels"), so they read oddly on the helmet and box, which have no wheels.
+Generalized all four to work on any of the three models while each still exercises a
+distinct tool: highlight the largest part (find + highlight), triangle and material
+counts (stats), what to optimize (suggest_optimizations), and export a report (gated).
+See [apps/web/src/components/Chat.tsx](apps/web/src/components/Chat.tsx).
+
 ## 2026-07-11 - Adversarial review round 2: highlight node resolution (H1), eval fixture drift guard (H2), and the medium cluster
 
 Cleared the two High findings and the eleven Mediums the previous entry tracked.
