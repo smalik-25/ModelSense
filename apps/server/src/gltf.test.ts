@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { fileURLToPath } from 'node:url';
-import type { Document } from '@gltf-transform/core';
+import { Document } from '@gltf-transform/core';
 import * as domain from './gltf';
 import { availableModels, isAllowedModelUrl, resolveModel } from './catalog';
 
@@ -44,10 +44,48 @@ describe('catalog', () => {
 describe('domain (against committed GLB fixtures)', () => {
   let truck: Document;
   let helmet: Document;
+  let box: Document;
 
   beforeAll(async () => {
     truck = (await domain.loadLocal(modelPath('CesiumMilkTruck.glb'))).doc;
     helmet = (await domain.loadLocal(modelPath('DamagedHelmet.glb'))).doc;
+    box = (await domain.loadLocal(modelPath('Box.glb'))).doc;
+  });
+
+  it('node ids: unnamed Box nodes get positional node-<index> ids the viewer can resolve', () => {
+    // Box.glb has no node names, so ids fall back to position. This is the id the
+    // agent highlights by; the viewer stamps the same node-<index> from the glTF
+    // index (parser.associations), so the highlight resolves instead of silently
+    // no-opping (the H1 bug: a "highlight the largest mesh" that lit nothing).
+    const all = domain.findElements(box, '', 50);
+    const ids = all.elements.map((e) => e.id);
+    expect(ids).toContain('node-1');
+    const mesh = all.elements.find((e) => e.id === 'node-1');
+    expect(mesh?.type).toBe('mesh');
+    expect(mesh?.triangles).toBeGreaterThan(0);
+    // The largest element (first, sorted desc) is the mesh node, and it is a valid
+    // highlight/camera target addressed positionally.
+    expect(all.elements[0]?.id).toBe('node-1');
+    expect(domain.buildHighlight(box, ['node-1']).nodeIds).toEqual(['node-1']);
+    expect(domain.cameraFocus(box, 'node-1').nodeId).toBe('node-1');
+  });
+
+  it('node ids: duplicate names fall back to unique positional ids, still findable by name', () => {
+    // No shipped model has duplicate node names, but the addressing must not
+    // silently resolve the wrong node if one ever does (finding M4). Two nodes
+    // named "Dup" get node-0 / node-1 so each is uniquely addressable.
+    const doc = new Document();
+    const a = doc.createNode('Dup');
+    const b = doc.createNode('Dup');
+    doc.createScene('s').addChild(a).addChild(b);
+
+    const found = domain.findElements(doc, 'dup', 25);
+    expect(found.total).toBe(2);
+    expect(found.elements.map((e) => e.id).sort()).toEqual(['node-0', 'node-1']);
+    expect(found.elements.every((e) => e.name === 'Dup')).toBe(true);
+    // Each positional id resolves; ids are distinct so the second is reachable.
+    expect(domain.buildHighlight(doc, ['node-1']).nodeIds).toEqual(['node-1']);
+    expect(() => domain.cameraFocus(doc, 'node-0')).not.toThrow();
   });
 
   it('summarize: DamagedHelmet is one textured mesh, ~15.4k triangles', () => {

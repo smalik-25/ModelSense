@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Bounds, Html, Line, OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { CameraFocusCommand, HighlightCommand, MeasurementCommand } from '@modelsense/shared';
-import { objectMatchesTargets } from '../lib/highlight';
+import { objectMatchesTargets, stampModelIds } from '../lib/highlight';
 
 const originalEmissive = new WeakMap<THREE.MeshStandardMaterial, number>();
 const highlightColor = new THREE.Color();
@@ -53,7 +53,14 @@ function applyHighlight(scene: THREE.Object3D, highlight: HighlightCommand | nul
 }
 
 function Model({ url, highlight }: { url: string; highlight: HighlightCommand | null }) {
-  const { scene } = useGLTF(url);
+  const gltf = useGLTF(url);
+  const { scene } = gltf;
+  // Stamp the server's positional node ids onto the scene once per load, so a
+  // highlight for an unnamed node (`node-<index>`) can resolve. Runs before the
+  // highlight effect below on a fresh model.
+  useEffect(() => {
+    stampModelIds(gltf);
+  }, [gltf]);
   useEffect(() => {
     applyHighlight(scene, highlight);
   }, [scene, highlight]);

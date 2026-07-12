@@ -89,14 +89,34 @@ export async function loadUrl(url: string): Promise<{ doc: Document; bytes: numb
 
 // --- node identity ---------------------------------------------------------
 
-/** Stable per-node id: the node name if present, else `node-<index>`. */
-function nodeId(node: GNode, index: number): string {
-  return node.getName() || `node-${index}`;
+/**
+ * Addressable id for every node, in `listNodes()` order (the glTF `nodes` array
+ * order). A node's id is its glTF name when that name is UNIQUE in the document;
+ * otherwise a positional `node-<index>`. The fallback covers two cases the viewer
+ * could not otherwise resolve:
+ *  - an unnamed node (Box.glb's mesh node): three's GLTFLoader gives it a synthetic
+ *    object name, so a name-based id would never match anything in the scene.
+ *  - two nodes sharing a name: a bare name would be ambiguous, so the first match
+ *    silently answered for the second. Positional ids keep every id unique.
+ * The web viewer mirrors this index via GLTFLoader's parser.associations, so a
+ * `node-<index>` id resolves to the same node on both sides.
+ */
+function nodeIdsFor(nodes: GNode[]): string[] {
+  const counts = new Map<string, number>();
+  for (const n of nodes) {
+    const name = n.getName();
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  }
+  return nodes.map((n, i) => {
+    const name = n.getName();
+    return name && counts.get(name) === 1 ? name : `node-${i}`;
+  });
 }
 
 function findNodeById(doc: Document, id: string): GNode | undefined {
   const nodes = doc.getRoot().listNodes();
-  return nodes.find((n, i) => nodeId(n, i) === id);
+  const idx = nodeIdsFor(nodes).indexOf(id);
+  return idx >= 0 ? nodes[idx] : undefined;
 }
 
 /** Every node in the subtree rooted at `node` (the node itself plus descendants). */
@@ -256,11 +276,17 @@ export function sceneStats(doc: Document, nodeId?: string): GetSceneStatsOutput 
 
 export function findElements(doc: Document, query: string, limit: number): FindElementsOutput {
   const needle = query.toLowerCase();
-  const matches = doc
-    .getRoot()
-    .listNodes()
-    .map((node, i) => ({ node, id: nodeId(node, i) }))
-    .filter(({ id }) => id.toLowerCase().includes(needle))
+  const nodes = doc.getRoot().listNodes();
+  const ids = nodeIdsFor(nodes);
+  const matches = nodes
+    .map((node, i) => ({ node, id: ids[i]! }))
+    // Match the query against the node's name AND its id, so a duplicately named
+    // node (whose id falls back to positional `node-<index>`) is still findable by
+    // name, and an unnamed node is findable by its `node-` id.
+    .filter(({ node, id }) => {
+      const name = node.getName();
+      return id.toLowerCase().includes(needle) || (!!name && name.toLowerCase().includes(needle));
+    })
     .map(({ node, id }) => {
       const { vertices, triangles } = nodeGeometry(node);
       const bounds = getBounds(node);
@@ -286,7 +312,7 @@ export function buildHighlight(
   color?: string,
   exclusive?: boolean,
 ): HighlightElementsOutput {
-  const known = new Set(doc.getRoot().listNodes().map((n, i) => nodeId(n, i)));
+  const known = new Set(nodeIdsFor(doc.getRoot().listNodes()));
   const missing = nodeIds.filter((id) => !known.has(id));
   if (missing.length === nodeIds.length) {
     throw new ToolError(
