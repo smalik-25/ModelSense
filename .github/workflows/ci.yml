@@ -36,6 +36,12 @@ jobs:
       - name: Unit tests
         run: pnpm test
 
+      # Build the agent bundle Render actually runs (tsup -> dist/combined.js), plus
+      # its workspace deps, so a broken production build fails CI instead of the
+      # deploy. `...` includes @modelsense/shared.
+      - name: Build agent bundle (Render runtime)
+        run: pnpm --filter @modelsense/agent... run build
+
   # Eval harness: golden-set validation, scorer tests, and the regression gate.
   # Fully offline (recorded fixtures), never touches a live API.
   eval-gate:
