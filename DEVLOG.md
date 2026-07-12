@@ -2,6 +2,121 @@
 
 Running log of what changed and why. Newest first.
 
+## 2026-07-11 - Adversarial review round 2: highlight node resolution (H1), eval fixture drift guard (H2), and the medium cluster
+
+Cleared the two High findings and the eleven Mediums the previous entry tracked.
+
+H1, highlight ids the viewer could not resolve. The server addresses an unnamed
+node (or, after this change, a duplicately named one) by its position in the glTF
+`nodes` array as `node-<index>`. three's GLTFLoader gives an unnamed object a
+synthetic name ("Mesh" for Box.glb), so matching on names alone could never resolve
+`node-<index>`: the highlight silently no-opped while the agent reported success.
+This is reachable from the shipped catalog, since Box.glb's mesh node is unnamed and
+"highlight the largest mesh" resolves to `node-1`. Fix has two halves that meet at
+the glTF node index: the viewer stamps `userData.modelsenseId = node-<index>` on each
+object using GLTFLoader's `parser.associations` (object to `{ nodes: index }`), and
+the matcher checks that id too. Verified against the real GLB with a GLTFLoader probe:
+the Box mesh gets `node-1` and now matches, where name-only matching returned false.
+See [apps/web/src/lib/highlight.ts](apps/web/src/lib/highlight.ts) and
+[apps/server/src/gltf.ts](apps/server/src/gltf.ts).
+
+M4 folded into H1: node ids are now unique by construction. A name is used as the id
+only when it is unique in the document; a shared name (or none) falls back to
+`node-<index>`, so two identically named nodes no longer both resolve to the first
+via `findNodeById`. `find_elements` matches the query against the raw name and the
+id, so a fallback-id node stays findable by name. No shipped model has duplicate
+names, so reference.json is unchanged (Box already used `node-0`/`node-1`).
+
+H2, the eval harness certified stale numbers as complete. 25 of the 27 truck
+fixtures carried the pre-instancing scene aggregate (2856 triangles / 3995 vertices)
+in their tool outputs, because they were recorded before the instancing fix moved the
+truck total to 3624; two also narrated it. The outcome assertions only pin the fields
+a task names, so nothing caught the drift. Two-part fix:
+- A deterministic fixture-vs-reference drift guard
+  ([consistency.py](evals/src/modelsense_evals/consistency.py)): a tool output is a
+  pure function of the pinned GLBs, so every recorded `load_model` /
+  `get_scene_stats` / `suggest_optimizations` / `find_elements` value must equal
+  reference.json. The CI gate now fails on any drift, so a stale fixture cannot land.
+- Reconciled the 25 fixtures. A committed, idempotent script
+  ([reconcile_fixtures.py](evals/scripts/reconcile_fixtures.py)) restores the
+  deterministic tool-output fields from reference.json (53 fields across 25 files,
+  all scene aggregates; per-node counts were always correct). The four incidental
+  narrated numbers were corrected to match. This is the deterministic half of a
+  re-record and touches no reasoning; a full live re-record (`evals run
+  --save-fixtures`) additionally refreshes narration and usage, and is no longer
+  required for correctness now that the drift guard gates it.
+
+Medium cluster:
+- Token panel dropped cache reads (agent). `input_tokens` counts only uncached input;
+  the system prompt and tool schemas replay each turn through the cache, so the panel
+  undercounted input (the 2612-vs-7926 gap). Now sums input + cache_creation +
+  cache_read. [apps/agent/src/agent.ts](apps/agent/src/agent.ts).
+- ErrorBoundary never reset (web). A caught error (bad GLB, no WebGL) was permanent;
+  switching to a good model kept showing the fallback. Added `resetKeys`, wired to
+  `[modelId]`. [apps/web/src/components/ErrorBoundary.tsx](apps/web/src/components/ErrorBoundary.tsx).
+- Model picker stayed live mid-turn (web). Switching models while a turn streamed
+  applied that turn's highlight/camera to the newly loaded model. Chat now reports its
+  busy state so the picker is disabled while a turn is in flight.
+- Approval e2e was theater (web). It only checked the card hid, which happens on either
+  decision, so a client that dropped `approved` would still pass. The mock now captures
+  the POST body and the specs assert `approved: true`/`false`.
+- Session store (server). Added `updateAgeOnGet` so an in-use session is not evicted
+  mid-chat at the 20-minute TTL, and a `maxSize` memory bound (a parsed Document is
+  several times its file size, so 8 near-limit models could pin ~512MB).
+- Eval assertions (harness). `answer_contains_dimension` now also requires the answer
+  to name the axis (height/tall for y, ...), so the right value on the wrong dimension
+  cannot pass. The opt-box `answer_matches` regex is word-boundaried so "no" inside
+  "economical" cannot match.
+- CI (agent build). The build job now builds the agent bundle Render runs
+  (`tsup` to dist/combined.js), so a broken production build fails CI, not the deploy.
+- Coverage. Added e2e for the Stop and error-frame paths, a unit test for the
+  code-enforced tool gating (extracted `decideToolUse`), server tests for the Box
+  positional ids and duplicate-name uniqueness, and a Box unnamed-node highlight e2e.
+
+## 2026-07-11 - Adversarial review: top-cluster fixes (URL allowlist, /chat abuse guards, approval nonce, real highlight guard)
+
+A multi-agent adversarial review (10 hostile reviewers, 3 skeptics refuting each
+finding) surfaced 22 verified findings across the codebase and live site. Fixed the
+top cluster; the rest are tracked below.
+
+Model-URL allowlist bypass (server). isAllowedModelUrl used
+`pathname.includes('/KhronosGroup/glTF-Sample-Assets/')`, so
+`raw.githubusercontent.com/attacker/repo/main/KhronosGroup/glTF-Sample-Assets/x.glb`
+passed and any GitHub repo could pick the model the server fetches and parses.
+Anchored it to `startsWith`. Added test cases for the smuggled-segment bypass and a
+non-TLS URL. See [apps/server/src/catalog.ts:59](apps/server/src/catalog.ts).
+
+/chat abuse guards (agent). The public, login-free /chat spends the owner's Anthropic
+key on a 512MB free-tier host with no rate or concurrency limit, so any script or any
+website could drain the budget or OOM the process. Added a per-IP fixed-window limiter
+(12/min) and a global concurrent-turn cap (4), both returning 429. In-memory and
+single-process, which suits the demo; a multi-instance deploy would move these to a
+shared store. CORS still needs WEB_ORIGIN set on Render (documented) rather than the
+'*' default. See [apps/agent/src/http.ts:82](apps/agent/src/http.ts).
+
+Approval secret decoupled from the tool_use id (agent). The human-in-the-loop approval
+was keyed by the tool_use id, which is also emitted in tool-call events and Langfuse
+traces, so the value that authorizes running a gated tool leaked through observability.
+Now each approval mints a fresh randomUUID nonce, sent only in the approval SSE event.
+Full session-binding (so a second connection cannot resolve another turn's approval)
+stays deferred to the Phase 5 auth work in [docs/auth.md](docs/auth.md).
+
+Highlight fidelity e2e was vacuous (web). The both-wheels test asserted Wheels001
+lights up, but Wheels and Wheels001 are instances of one glTF mesh and share a
+material, so the `Wheels` match alone lit it regardless of the dot-strip logic the test
+was meant to guard. Changed it to target `Wheels.001` alone, so the shared material can
+only light via the userData.name match: verified against the real GLB that with the fix
+Wheels001 goes ffcc00 and without it stays 000000, so the test now fails on a
+regression. See [apps/web/tests/e2e/handwritten/highlight.spec.ts](apps/web/tests/e2e/handwritten/highlight.spec.ts).
+
+Tracked, not yet fixed (from the same review): node-id namespace collisions in the
+server (duplicate glTF names resolve to the wrong node via first-match findNodeById);
+the server can emit synthetic `node-<index>` ids the viewer cannot resolve; ErrorBoundary
+never resets so one bad model load wedges the viewer; the token-count panel drops cache
+reads (undercounts input by up to ~35x); the approval e2e never exercises Approve vs
+Reject; and the eval-harness and CI findings that were still in verification when the
+review run hit its account limit.
+
 ## 2026-07-10 - Highlight fidelity: dot-stripped node names, and closing the mesh-match gap
 
 A live report: the agent narrated "highlighted Wheels" on CesiumMilkTruck but the

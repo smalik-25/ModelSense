@@ -168,16 +168,22 @@ make run ARGS="--agent-url <url> --yes"     # live run (spends tokens)
 
 Four offline GitHub Actions jobs (never touch a live API):
 
-- `build`: ESLint, `tsc`, Vitest unit tests (server domain + MCP HTTP conformance).
-- `eval-gate`: golden-set validation, scorer tests, and the regression gate.
+- `build`: ESLint, `tsc`, Vitest unit tests (server domain + MCP HTTP conformance),
+  and a build of the agent bundle Render runs so a broken production build fails CI.
+- `eval-gate`: golden-set validation, scorer tests, and the regression gate. The gate
+  also runs a fixture-vs-reference drift check: recorded tool outputs are a
+  deterministic function of the pinned GLBs, so any value that disagrees with
+  reference.json (a stale recording) fails the build.
 - `conformance`: MCP Inspector CLI against the built server (`tools/list` +
   `tools/call` over Streamable HTTP).
 - `e2e`: Playwright against the built web app with the agent mocked at the network
   layer, including a highlight-fidelity check that reads emissive off the live
-  three.js scene so a highlight command has to actually land on the target mesh (it
-  catches glTF names that GLTFLoader rewrites, like `Wheels.001` becoming `Wheels001`).
-  Agent-generated specs and the handwritten-vs-generated benchmark are documented in
-  [AGENTS.md](AGENTS.md) and [docs/e2e-benchmark.md](docs/e2e-benchmark.md).
+  three.js scene so a highlight command has to actually land on the target mesh. It
+  catches glTF names that GLTFLoader rewrites (`Wheels.001` becoming `Wheels001`) and
+  unnamed nodes the server addresses positionally (Box.glb's mesh as `node-1`), plus
+  the Stop, error, and approve/reject paths. Agent-generated specs and the
+  handwritten-vs-generated benchmark are documented in [AGENTS.md](AGENTS.md) and
+  [docs/e2e-benchmark.md](docs/e2e-benchmark.md).
 
 ## Roadmap
 
