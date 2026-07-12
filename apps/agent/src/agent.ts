@@ -158,6 +158,36 @@ async function* singleUserMessage(text: string): AsyncGenerator<SDKUserMessage> 
   } as SDKUserMessage;
 }
 
+export type ToolDecision =
+  | { behavior: 'allow'; updatedInput: Record<string, unknown> }
+  | { behavior: 'deny'; message: string };
+
+/**
+ * Decide whether a tool call may run. This is the code-enforced guardrail (not a
+ * prompt instruction): only the gated export_report reaches a human approval, and
+ * anything not on the MCP allowlist is denied outright as defense in depth behind
+ * the SDK's `allowedTools`. Exported and pure so the gating is unit tested without
+ * standing up the Agent SDK.
+ */
+export async function decideToolUse(
+  toolName: string,
+  input: Record<string, unknown>,
+  toolUseId: string,
+  requestApproval?: (req: ApprovalRequest) => Promise<boolean>,
+): Promise<ToolDecision> {
+  if (toolName === GATED_TOOL) {
+    if (!requestApproval) {
+      return { behavior: 'deny', message: 'This action needs approval, which is unavailable.' };
+    }
+    const approved = await requestApproval({ id: toolUseId, tool: toolName, input });
+    return approved
+      ? { behavior: 'allow', updatedInput: input }
+      : { behavior: 'deny', message: 'The user declined this action.' };
+  }
+  // Anything reaching here is not allowlisted (e.g. built-in tools), so deny.
+  return { behavior: 'deny', message: `Tool ${toolName} is not permitted.` };
+}
+
 export interface RunTurnOptions {
   message: string;
   modelId: string;
@@ -201,19 +231,8 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
         maxTurns: env.maxTurns,
         permissionMode: 'default',
         abortController: abort,
-        canUseTool: async (toolName, input, ctx) => {
-          if (toolName === GATED_TOOL) {
-            if (!requestApproval) {
-              return { behavior: 'deny', message: 'This action needs approval, which is unavailable.' };
-            }
-            const approved = await requestApproval({ id: ctx.toolUseID, tool: toolName, input });
-            return approved
-              ? { behavior: 'allow', updatedInput: input }
-              : { behavior: 'deny', message: 'The user declined this action.' };
-          }
-          // Anything reaching here is not allowlisted (e.g. built-in tools), so deny.
-          return { behavior: 'deny', message: `Tool ${toolName} is not permitted.` };
-        },
+        canUseTool: (toolName, input, ctx) =>
+          decideToolUse(toolName, input, ctx.toolUseID, requestApproval),
       },
     })) {
       if (msg.type === 'assistant') {
@@ -250,8 +269,22 @@ export async function runTurn(opts: RunTurnOptions): Promise<void> {
           }
         }
       } else if (msg.type === 'result') {
-        const usage = msg.usage as { input_tokens?: number; output_tokens?: number } | undefined;
-        const inputTokens = usage?.input_tokens ?? 0;
+        const usage = msg.usage as
+          | {
+              input_tokens?: number;
+              output_tokens?: number;
+              cache_creation_input_tokens?: number;
+              cache_read_input_tokens?: number;
+            }
+          | undefined;
+        // `input_tokens` counts only UNCACHED input. Prompt caching moves the bulk
+        // of the input (system prompt + tool schemas, replayed each turn) into the
+        // cache_read/cache_creation buckets, so reporting input_tokens alone
+        // undercounts the real input several-fold (the 2612-vs-7926 gap in the UI).
+        const inputTokens =
+          (usage?.input_tokens ?? 0) +
+          (usage?.cache_creation_input_tokens ?? 0) +
+          (usage?.cache_read_input_tokens ?? 0);
         const outputTokens = usage?.output_tokens ?? 0;
         const traceUrl = trace?.finish(finalText, {
           inputTokens,
