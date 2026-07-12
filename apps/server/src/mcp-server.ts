@@ -64,7 +64,7 @@ export function createMcpServer(): McpServer {
         }
         const summary = domain.summarize(doc);
         const session_id = randomUUID();
-        putSession(session_id, { doc, model_id: id, name, loadedAt: Date.now() });
+        putSession(session_id, { doc, model_id: id, name, loadedAt: Date.now(), bytes });
         return ok({ session_id, model_id: id, name, ...summary, fileSizeBytes: bytes });
       } catch (err) {
         return toFail(err, 'load_model');
